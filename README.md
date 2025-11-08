@@ -1,9 +1,3 @@
-Parfait ✅ Voici ton README.md final, prêt à être copié/collé (ou directement commit dans ton repo GenHack4-Hackathon-Vertex).
-Tout est corrigé, indenté, compatible GitHub, et structuré pour un rendu propre en Markdown UTF-8.
-
-⸻
-
-
 # 🌡️ GenHack4 – Climate Heat Downscaling Pipeline
 
 [![Cloud Run](https://img.shields.io/badge/Cloud%20Run-Deployed-blue)](https://console.cloud.google.com/run/jobs?project=genhack-heat-dev)  

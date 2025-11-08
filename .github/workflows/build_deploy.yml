@@ -148,15 +148,29 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+        continue-on-error: true
+      
+      - name: Check if credentials exist
+        id: check_creds
+        run: |
+          if [ -z "${{ secrets.GCP_SA_KEY }}" ]; then
+            echo "⚠️ GCP_SA_KEY not configured - skipping deployment"
+            echo "skip_deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip_deploy=false" >> $GITHUB_OUTPUT
+          fi
       
       - name: Set up Cloud SDK
+        if: steps.check_creds.outputs.skip_deploy != 'true'
         uses: google-github-actions/setup-gcloud@v2
       
       - name: Configure Docker for Artifact Registry
+        if: steps.check_creds.outputs.skip_deploy != 'true'
         run: |
           gcloud auth configure-docker ${{ env.REGISTRY_LOCATION }}-docker.pkg.dev
       
       - name: Tag and push image
+        if: steps.check_creds.outputs.skip_deploy != 'true'
         run: |
           IMAGE_URL="${{ env.REGISTRY_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}"
           
@@ -167,6 +181,7 @@ jobs:
           docker push $IMAGE_URL:latest
       
       - name: Deploy Cloud Run Job
+        if: steps.check_creds.outputs.skip_deploy != 'true'
         run: |
           JOB_NAME="heat-downscaling-pipeline"
           IMAGE_URL="${{ env.REGISTRY_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"

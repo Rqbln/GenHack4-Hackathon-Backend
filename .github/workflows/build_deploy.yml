@@ -121,16 +121,15 @@ jobs:
           pytest tests/test_contracts.py -v
 
   # ===========================================
-  # Deploy (manual trigger or main push)
+  # Deploy (manual trigger only - disabled auto-deploy)
   # ===========================================
   deploy:
     name: Deploy to Cloud Run
     runs-on: ubuntu-latest
     needs: [build, test]
     if: |
-      github.ref == 'refs/heads/main' && 
-      (github.event_name == 'push' || 
-       github.event.inputs.deploy == 'true')
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.deploy == 'true'
     
     steps:
       - uses: actions/checkout@v4

@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://genhack.climate/schemas/raster_metadata.schema.json",
+  "title": "Raster Metadata",
+  "description": "Metadata describing a georeferenced raster file",
+  "type": "object",
+  "required": ["crs", "transform", "width", "height", "dtype"],
+  "properties": {
+    "crs": {
+      "type": "string",
+      "description": "Coordinate reference system (EPSG or WKT)",
+      "examples": ["EPSG:3857", "EPSG:2154"]
+    },
+    "transform": {
+      "type": "array",
+      "description": "Affine transform [a, b, c, d, e, f] (GDAL convention)",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 6,
+      "maxItems": 6
+    },
+    "width": {
+      "type": "integer",
+      "description": "Raster width in pixels",
+      "minimum": 1
+    },
+    "height": {
+      "type": "integer",
+      "description": "Raster height in pixels",
+      "minimum": 1
+    },
+    "nodata": {
+      "type": ["number", "null"],
+      "description": "No-data value"
+    },
+    "dtype": {
+      "type": "string",
+      "description": "Data type",
+      "examples": ["float32", "float64", "int16", "uint8"]
+    },
+    "units": {
+      "type": "string",
+      "description": "Physical units of the data",
+      "examples": ["celsius", "kelvin", "percent", "index"]
+    },
+    "spatial_ref": {
+      "type": "string",
+      "description": "Full WKT spatial reference"
+    },
+    "bounds": {
+      "type": "object",
+      "description": "Geographic bounds",
+      "required": ["minx", "miny", "maxx", "maxy"],
+      "properties": {
+        "minx": {
+          "type": "number"
+        },
+        "miny": {
+          "type": "number"
+        },
+        "maxx": {
+          "type": "number"
+        },
+        "maxy": {
+          "type": "number"
+        }
+      }
+    },
+    "band_count": {
+      "type": "integer",
+      "description": "Number of bands/layers",
+      "minimum": 1
+    },
+    "band_names": {
+      "type": "array",
+      "description": "Names of bands/layers",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

@@ -1,0 +1,89 @@
+# ============================================
+# GenHack Climate Configuration - Paris 2022
+# ============================================
+# Mock configuration for Phase 1 testing
+# This configuration uses synthetic data
+
+city: "paris"
+
+# Time period for analysis (summer heatwave simulation)
+period:
+  start: "2022-07-15"
+  end: "2022-07-17"
+
+# Target grid specification
+grid:
+  crs: "EPSG:3857"  # Web Mercator for initial testing
+  resolution_m: 200  # 200m resolution (achievable from 25km ERA5)
+  
+# Geographic extent (Paris metropolitan area)
+extent:
+  # Bounding box in WGS84 (lon/lat)
+  bbox_wgs84: [2.224, 48.815, 2.470, 48.902]
+  # Approximate center
+  center: [2.347, 48.859]
+
+# Climate/environmental variables to process
+variables:
+  - "t2m"   # 2-meter temperature
+  - "tx"    # Maximum temperature
+  - "tn"    # Minimum temperature
+  - "rh"    # Relative humidity
+  - "u10"   # 10m U wind component
+  - "v10"   # 10m V wind component
+
+# Data sources (Phase 1: all in dry_run mode)
+sources:
+  era5:
+    provider: "copernicus"
+    dataset: "reanalysis-era5-single-levels"
+    path: "gs://gh-raw-era5-genhack-heat-dev/paris/2022/"
+    resolution_km: 25
+    
+  sentinel2:
+    provider: "copernicus"
+    collection: "COPERNICUS/S2_SR_HARMONIZED"
+    path: "gs://gh-raw-sentinel2-genhack-heat-dev/paris/2022/"
+    resolution_m: 10
+    bands: ["B2", "B3", "B4", "B8", "B11", "B12"]
+    
+  osm:
+    provider: "osm"
+    features: ["buildings", "roads", "landuse", "water"]
+    path: "gs://gh-raw-osm-genhack-heat-dev/paris/"
+
+# Processing mode
+mode:
+  dry_run: true  # Phase 1: use mock data, no real downloads
+  save_intermediate: true
+  verbose: true
+
+# Model configuration (placeholder for Phase 2+)
+model:
+  type: "bicubic"  # Phase 1: simple baseline only
+  # Future: unet, srgan, etc.
+  
+# Heat indicators configuration
+indicators:
+  threshold_celsius: 30
+  urban_heat_island_analysis: true
+  
+# Output configuration
+output:
+  formats: ["geotiff", "png", "metadata"]
+  compression: "lzw"
+  tiled: true
+  report:
+    format: ["html", "pdf"]
+    include_maps: true
+    include_metrics: true
+    
+# GCS paths (constructed from PROJECT_ID env var)
+gcs:
+  raw: "gs://gh-raw-{project}/paris/2022/"
+  intermediate: "gs://gh-intermediate-{project}/paris/2022/"
+  features: "gs://gh-intermediate-{project}/paris/2022/features/"
+  models: "gs://gh-models-{project}/experiments/"
+  exports: "gs://gh-exports-{project}/paris/2022/"
+  configs: "gs://gh-configs-{project}/"
+  logs: "gs://gh-logs-{project}/paris/2022/"

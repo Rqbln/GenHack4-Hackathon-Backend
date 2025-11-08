@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://genhack.climate/schemas/manifest.schema.json",
+  "title": "Pipeline Manifest",
+  "description": "Describes the data context passed between pipeline stages",
+  "type": "object",
+  "required": ["city", "period", "grid", "tiles", "variables", "created_at", "stage"],
+  "properties": {
+    "city": {
+      "type": "string",
+      "description": "City name",
+      "examples": ["paris", "lyon", "marseille"]
+    },
+    "period": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date",
+          "description": "Start date (YYYY-MM-DD)"
+        },
+        "end": {
+          "type": "string",
+          "format": "date",
+          "description": "End date (YYYY-MM-DD)"
+        }
+      }
+    },
+    "grid": {
+      "type": "object",
+      "required": ["crs", "resolution_m"],
+      "properties": {
+        "crs": {
+          "type": "string",
+          "description": "Coordinate reference system (EPSG code)",
+          "examples": ["EPSG:3857", "EPSG:2154"]
+        },
+        "resolution_m": {
+          "type": "number",
+          "description": "Target spatial resolution in meters",
+          "minimum": 10,
+          "maximum": 30000
+        }
+      }
+    },
+    "tiles": {
+      "type": "array",
+      "description": "List of spatial tiles (for large areas)",
+      "items": {
+        "type": "object",
+        "required": ["id", "bbox"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Tile identifier"
+          },
+          "bbox": {
+            "type": "array",
+            "description": "Bounding box [minx, miny, maxx, maxy]",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          }
+        }
+      }
+    },
+    "variables": {
+      "type": "array",
+      "description": "List of climate/environmental variables",
+      "items": {
+        "type": "string",
+        "examples": ["t2m", "tx", "tn", "rh", "u10", "v10", "ndvi", "ndbi"]
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of manifest creation"
+    },
+    "stage": {
+      "type": "string",
+      "enum": ["ingest", "preprocess", "features", "train", "evaluate", "indicators", "publish"],
+      "description": "Current pipeline stage"
+    },
+    "mode": {
+      "type": "object",
+      "properties": {
+        "dry_run": {
+          "type": "boolean",
+          "description": "If true, use mock data instead of real sources"
+        }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "description": "GCS paths to intermediate data",
+      "properties": {
+        "raw": {
+          "type": "string",
+          "description": "gs:// path to raw data"
+        },
+        "intermediate": {
+          "type": "string",
+          "description": "gs:// path to preprocessed data"
+        },
+        "features": {
+          "type": "string",
+          "description": "gs:// path to feature rasters"
+        },
+        "exports": {
+          "type": "string",
+          "description": "gs:// path to final outputs"
+        }
+      }
+    }
+  }
+}

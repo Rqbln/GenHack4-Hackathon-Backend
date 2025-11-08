@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heat Downscaling Report - {{ city|title }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #d32f2f;
+            border-bottom: 3px solid #d32f2f;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            color: #1976d2;
+            margin-top: 30px;
+            border-left: 4px solid #1976d2;
+            padding-left: 10px;
+        }
+        
+        h3 {
+            color: #388e3c;
+            margin-top: 20px;
+        }
+        
+        .metadata {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .metadata table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .metadata td {
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .metadata td:first-child {
+            font-weight: bold;
+            width: 40%;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #d32f2f;
+            margin: 10px 0;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+        
+        .map-container {
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        
+        .map-container img {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .map-caption {
+            text-align: center;
+            font-style: italic;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
+        }
+        
+        .indicator-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .indicator-item {
+            padding: 10px;
+            background: white;
+            border-radius: 3px;
+        }
+        
+        .indicator-label {
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .indicator-value {
+            font-size: 1.2em;
+            color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌡️ Heat Downscaling Report</h1>
+    
+    <div class="metadata">
+        <table>
+            <tr>
+                <td>City</td>
+                <td>{{ city|title }}</td>
+            </tr>
+            <tr>
+                <td>Period</td>
+                <td>{{ period_start }} to {{ period_end }}</td>
+            </tr>
+            <tr>
+                <td>Spatial Resolution</td>
+                <td>{{ resolution_m }} meters</td>
+            </tr>
+            <tr>
+                <td>Coordinate System</td>
+                <td>{{ crs }}</td>
+            </tr>
+            <tr>
+                <td>Generated</td>
+                <td>{{ generated_at }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    {% if mode_dry_run %}
+    <div class="warning">
+        <strong>⚠️ Phase 1 - Mock Data</strong><br>
+        This report uses synthetic data for pipeline testing. 
+        Phase 2+ will use real ERA5 climate data and Sentinel-2 imagery.
+    </div>
+    {% endif %}
+    
+    <h2>📊 Heat Indicators</h2>
+    
+    {% if indicators %}
+    <div class="metrics">
+        {% if indicators.max_temperature_c %}
+        <div class="metric-card">
+            <div class="metric-label">Max Temperature</div>
+            <div class="metric-value">{{ "%.1f"|format(indicators.max_temperature_c) }}°C</div>
+        </div>
+        {% endif %}
+        
+        {% if indicators.mean_temperature_c %}
+        <div class="metric-card">
+            <div class="metric-label">Mean Temperature</div>
+            <div class="metric-value">{{ "%.1f"|format(indicators.mean_temperature_c) }}°C</div>
+        </div>
+        {% endif %}
+        
+        {% if indicators.urban_heat_island_intensity_c %}
+        <div class="metric-card">
+            <div class="metric-label">Urban Heat Island</div>
+            <div class="metric-value">{{ "%.1f"|format(indicators.urban_heat_island_intensity_c) }}°C</div>
+        </div>
+        {% endif %}
+        
+        {% if indicators.extent_km2 %}
+        <div class="metric-card">
+            <div class="metric-label">Heat Extent</div>
+            <div class="metric-value">{{ "%.1f"|format(indicators.extent_km2) }} km²</div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="indicator-grid">
+        {% if indicators.intensity %}
+        <div class="indicator-item">
+            <span class="indicator-label">Intensity:</span>
+            <span class="indicator-value">{{ "%.1f"|format(indicators.intensity) }}°C</span>
+        </div>
+        {% endif %}
+        
+        {% if indicators.days_above_threshold %}
+        <div class="indicator-item">
+            <span class="indicator-label">Days Above {{ indicators.threshold_c }}°C:</span>
+            <span class="indicator-value">{{ indicators.days_above_threshold }}</span>
+        </div>
+        {% endif %}
+        
+        {% if indicators.percentile_95 %}
+        <div class="indicator-item">
+            <span class="indicator-label">95th Percentile:</span>
+            <span class="indicator-value">{{ "%.1f"|format(indicators.percentile_95) }}°C</span>
+        </div>
+        {% endif %}
+        
+        {% if indicators.percentile_99 %}
+        <div class="indicator-item">
+            <span class="indicator-label">99th Percentile:</span>
+            <span class="indicator-value">{{ "%.1f"|format(indicators.percentile_99) }}°C</span>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <p><em>No indicators computed (Phase 1 placeholder)</em></p>
+    {% endif %}
+    
+    {% if include_maps and maps|length > 0 %}
+    <h2>🗺️ Spatial Analysis</h2>
+    
+    {% for map in maps %}
+    <div class="map-container">
+        <img src="{{ map.path }}" alt="{{ map.title }}">
+        <div class="map-caption">{{ map.caption }}</div>
+    </div>
+    {% endfor %}
+    {% endif %}
+    
+    {% if include_metrics %}
+    <h2>📈 Model Performance</h2>
+    
+    {% if metrics and (metrics.rmse or metrics.mae or metrics.r2) %}
+    <div class="indicator-grid">
+        {% if metrics.rmse %}
+        <div class="indicator-item">
+            <span class="indicator-label">RMSE:</span>
+            <span class="indicator-value">{{ "%.2f"|format(metrics.rmse) }}</span>
+        </div>
+        {% endif %}
+        
+        {% if metrics.mae %}
+        <div class="indicator-item">
+            <span class="indicator-label">MAE:</span>
+            <span class="indicator-value">{{ "%.2f"|format(metrics.mae) }}</span>
+        </div>
+        {% endif %}
+        
+        {% if metrics.r2 %}
+        <div class="indicator-item">
+            <span class="indicator-label">R²:</span>
+            <span class="indicator-value">{{ "%.3f"|format(metrics.r2) }}</span>
+        </div>
+        {% endif %}
+        
+        {% if metrics.correlation %}
+        <div class="indicator-item">
+            <span class="indicator-label">Correlation:</span>
+            <span class="indicator-value">{{ "%.3f"|format(metrics.correlation) }}</span>
+        </div>
+        {% endif %}
+    </div>
+    
+    <p><strong>Baseline Method:</strong> {{ metrics.baseline|title }}</p>
+    
+    {% if metrics.improvement_percent %}
+    <p><strong>Improvement over Baseline:</strong> {{ "%.1f"|format(metrics.improvement_percent) }}%</p>
+    {% endif %}
+    {% else %}
+    <p><em>Model evaluation pending (Phase 2+)</em></p>
+    {% endif %}
+    {% endif %}
+    
+    <h2>🔧 Pipeline Information</h2>
+    
+    <div class="metadata">
+        <table>
+            <tr>
+                <td>Variables Processed</td>
+                <td>{{ variables|join(", ") }}</td>
+            </tr>
+            <tr>
+                <td>Pipeline Stage</td>
+                <td>{{ stage|upper }}</td>
+            </tr>
+            <tr>
+                <td>Processing Mode</td>
+                <td>{% if mode_dry_run %}Dry Run (Mock Data){% else %}Production{% endif %}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="footer">
+        <p><strong>GenHack Climate Heat Downscaling Project</strong></p>
+        <p>Generated: {{ generated_at }}</p>
+        <p>For evaluation purposes only. Mock data in Phase 1.</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://genhack.climate/schemas/metrics.schema.json",
+  "title": "Model Evaluation Metrics",
+  "description": "Quantitative metrics for downscaling model performance",
+  "type": "object",
+  "properties": {
+    "rmse": {
+      "type": ["number", "null"],
+      "description": "Root Mean Square Error",
+      "minimum": 0
+    },
+    "mae": {
+      "type": ["number", "null"],
+      "description": "Mean Absolute Error",
+      "minimum": 0
+    },
+    "r2": {
+      "type": ["number", "null"],
+      "description": "R² coefficient of determination",
+      "minimum": -1,
+      "maximum": 1
+    },
+    "bias": {
+      "type": ["number", "null"],
+      "description": "Mean bias (predicted - observed)"
+    },
+    "correlation": {
+      "type": ["number", "null"],
+      "description": "Pearson correlation coefficient",
+      "minimum": -1,
+      "maximum": 1
+    },
+    "baseline": {
+      "type": "string",
+      "description": "Baseline method used for comparison",
+      "examples": ["bicubic", "nearest", "bilinear", "none"]
+    },
+    "baseline_rmse": {
+      "type": ["number", "null"],
+      "description": "Baseline RMSE for comparison",
+      "minimum": 0
+    },
+    "improvement_percent": {
+      "type": ["number", "null"],
+      "description": "Percentage improvement over baseline"
+    },
+    "spatial_resolution_m": {
+      "type": "number",
+      "description": "Spatial resolution of evaluation in meters"
+    },
+    "sample_count": {
+      "type": "integer",
+      "description": "Number of samples used for evaluation",
+      "minimum": 0
+    },
+    "evaluation_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of evaluation"
+    }
+  }
+}

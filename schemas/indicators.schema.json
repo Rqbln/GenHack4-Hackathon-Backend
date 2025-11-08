@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://genhack.climate/schemas/indicators.schema.json",
+  "title": "Heat Indicators",
+  "description": "Climate indicators derived from downscaled temperature data",
+  "type": "object",
+  "properties": {
+    "intensity": {
+      "type": ["number", "null"],
+      "description": "Mean temperature anomaly during heat event (°C)",
+      "minimum": 0
+    },
+    "duration": {
+      "type": ["integer", "null"],
+      "description": "Duration of heat event in days",
+      "minimum": 0
+    },
+    "extent_km2": {
+      "type": ["number", "null"],
+      "description": "Spatial extent of heat event in km²",
+      "minimum": 0
+    },
+    "max_temperature_c": {
+      "type": ["number", "null"],
+      "description": "Maximum temperature observed (°C)"
+    },
+    "mean_temperature_c": {
+      "type": ["number", "null"],
+      "description": "Mean temperature over period (°C)"
+    },
+    "threshold_c": {
+      "type": "number",
+      "description": "Heat threshold used for detection (°C)",
+      "default": 30
+    },
+    "days_above_threshold": {
+      "type": ["integer", "null"],
+      "description": "Number of days exceeding threshold",
+      "minimum": 0
+    },
+    "affected_population_estimate": {
+      "type": ["integer", "null"],
+      "description": "Estimated population in affected areas",
+      "minimum": 0
+    },
+    "urban_heat_island_intensity_c": {
+      "type": ["number", "null"],
+      "description": "Temperature difference urban vs rural (°C)",
+      "minimum": 0
+    },
+    "percentile_95": {
+      "type": ["number", "null"],
+      "description": "95th percentile of temperature distribution (°C)"
+    },
+    "percentile_99": {
+      "type": ["number", "null"],
+      "description": "99th percentile of temperature distribution (°C)"
+    },
+    "computed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of indicator computation"
+    }
+  }
+}

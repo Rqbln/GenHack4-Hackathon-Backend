@@ -79,9 +79,9 @@ jobs:
       
       - name: Test image
         run: |
-          # Verify image can run
-          docker run --rm ${{ env.IMAGE_NAME }}:latest \
-            python -c "import sys; import rasterio; import xarray; sys.exit(0)"
+          # Verify image can run and import key dependencies
+          docker run --rm --entrypoint python ${{ env.IMAGE_NAME }}:latest \
+            -c "import sys; import rasterio; import xarray; sys.exit(0)"
           
           echo "✅ Image smoke test passed"
       

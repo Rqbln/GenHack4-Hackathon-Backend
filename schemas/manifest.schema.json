@@ -99,19 +99,19 @@
       "description": "GCS paths to intermediate data",
       "properties": {
         "raw": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "gs:// path to raw data"
         },
         "intermediate": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "gs:// path to preprocessed data"
         },
         "features": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "gs:// path to feature rasters"
         },
         "exports": {
-          "type": "string",
+          "type": ["string", "null"],
           "description": "gs:// path to final outputs"
         }
       }

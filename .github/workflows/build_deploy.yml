@@ -118,6 +118,7 @@ jobs:
       
       - name: Run contract tests
         run: |
+          export PYTHONPATH="${GITHUB_WORKSPACE}:${PYTHONPATH}"
           pytest tests/test_contracts.py -v
 
   # ===========================================

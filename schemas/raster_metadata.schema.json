@@ -40,16 +40,16 @@
       "examples": ["float32", "float64", "int16", "uint8"]
     },
     "units": {
-      "type": "string",
+      "type": ["string", "null"],
       "description": "Physical units of the data",
       "examples": ["celsius", "kelvin", "percent", "index"]
     },
     "spatial_ref": {
-      "type": "string",
+      "type": ["string", "null"],
       "description": "Full WKT spatial reference"
     },
     "bounds": {
-      "type": "object",
+      "type": ["object", "null"],
       "description": "Geographic bounds",
       "required": ["minx", "miny", "maxx", "maxy"],
       "properties": {
@@ -68,12 +68,12 @@
       }
     },
     "band_count": {
-      "type": "integer",
+      "type": ["integer", "null"],
       "description": "Number of bands/layers",
       "minimum": 1
     },
     "band_names": {
-      "type": "array",
+      "type": ["array", "null"],
       "description": "Names of bands/layers",
       "items": {
         "type": "string"

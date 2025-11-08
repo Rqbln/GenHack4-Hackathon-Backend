@@ -50,7 +50,7 @@
       "description": "Spatial resolution of evaluation in meters"
     },
     "sample_count": {
-      "type": "integer",
+      "type": ["integer", "null"],
       "description": "Number of samples used for evaluation",
       "minimum": 0
     },

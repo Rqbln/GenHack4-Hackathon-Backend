@@ -53,6 +53,9 @@ htmlcov/
 *.zarr
 *.hdf5
 
+# PDFs (documentation externe)
+*.pdf
+
 # Logs
 *.log
 

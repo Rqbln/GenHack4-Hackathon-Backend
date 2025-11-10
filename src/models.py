@@ -3,7 +3,7 @@ GenHack Climate - Common data models and utilities
 Pydantic models matching JSON schemas for type safety
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
@@ -23,7 +23,7 @@ class Grid(BaseModel):
 class Tile(BaseModel):
     """Spatial tile for large area processing"""
     id: str
-    bbox: List[float] = Field(..., min_items=4, max_items=4)
+    bbox: List[float] = Field(..., min_length=4, max_length=4)
 
 
 class Mode(BaseModel):
@@ -46,7 +46,7 @@ class Manifest(BaseModel):
     grid: Grid
     tiles: List[Tile] = []
     variables: List[str]
-    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     stage: str
     mode: Optional[Mode] = Mode()
     paths: Optional[Paths] = Paths()
@@ -67,7 +67,7 @@ class Bounds(BaseModel):
 class RasterMetadata(BaseModel):
     """Raster file metadata"""
     crs: str
-    transform: List[float] = Field(..., min_items=6, max_items=6)
+    transform: List[float] = Field(..., min_length=6, max_length=6)
     width: int = Field(..., gt=0)
     height: int = Field(..., gt=0)
     nodata: Optional[float] = None
@@ -95,7 +95,7 @@ class Metrics(BaseModel):
     improvement_percent: Optional[float] = None
     spatial_resolution_m: Optional[float] = None
     sample_count: Optional[int] = None
-    evaluation_date: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    evaluation_date: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_json(self) -> Dict[str, Any]:
         """Export to JSON-serializable dict"""
@@ -115,7 +115,7 @@ class Indicators(BaseModel):
     urban_heat_island_intensity_c: Optional[float] = None
     percentile_95: Optional[float] = None
     percentile_99: Optional[float] = None
-    computed_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    computed_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def to_json(self) -> Dict[str, Any]:
         """Export to JSON-serializable dict"""

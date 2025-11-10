@@ -60,10 +60,11 @@ htmlcov/
 # Logs
 *.log
 
-# Secrets
+# Secrets & API Keys
 .env
 .env.*
 !.env.example
+.cdsapirc
 *.key
 *.json.secret
 gcp-key.json

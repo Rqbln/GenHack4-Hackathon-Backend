@@ -1,10 +1,10 @@
 """
-GenHack Climate - Data Ingestion (Phase 1: Mock/Stub)
+GenHack Climate - Data Ingestion
 
-In Phase 1, this module generates synthetic rasters instead of downloading
-real ERA5/Sentinel-2/OSM data.
+Phase 1: Generates synthetic rasters (mock mode)
+Phase 2: Downloads real ERA5 data from Copernicus CDS
 
-Phase 2+ will implement real data providers.
+Toggle with manifest.mode.dry_run flag
 """
 
 import json
@@ -17,6 +17,7 @@ from rasterio.transform import from_bounds
 from datetime import datetime
 
 from src.models import Manifest, Tile, Paths
+from src.era5_client import ERA5Client
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -94,11 +95,80 @@ def generate_mock_raster(
     return output_path
 
 
+def ingest_era5_data(config: Dict[str, Any], manifest: Manifest) -> Manifest:
+    """
+    Real ERA5 data ingestion from Copernicus CDS
+    
+    Args:
+        config: Pipeline configuration
+        manifest: Input manifest
+        
+    Returns:
+        Updated manifest with ingested data paths
+    """
+    logger.info("🔄 INGEST STAGE (ERA5)")
+    logger.info(f"City: {manifest.city}")
+    logger.info(f"Period: {manifest.period.start} to {manifest.period.end}")
+    logger.info(f"Variables: {', '.join(manifest.variables)}")
+    
+    # Create output directory
+    if manifest.paths and manifest.paths.raw:
+        output_dir = Path(manifest.paths.raw.replace("gs://", "/tmp/gcs/"))
+    else:
+        output_dir = Path(f"/tmp/genhack/raw/{manifest.city}")
+    
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Get bbox from config
+    bbox = config.get("extent", {}).get("bbox_wgs84", [2.224, 48.815, 2.470, 48.902])
+    
+    # Initialize ERA5 client
+    client = ERA5Client()
+    
+    # Download ERA5 data
+    netcdf_files = client.download_era5(
+        variables=manifest.variables,
+        bbox=bbox,
+        start_date=manifest.period.start,
+        end_date=manifest.period.end,
+        output_dir=output_dir
+    )
+    
+    # Convert NetCDF to GeoTIFF
+    for var, nc_file in netcdf_files.items():
+        tif_file = output_dir / f"{var}_era5.tif"
+        client.convert_to_geotiff(
+            nc_file, 
+            tif_file, 
+            var,
+            time_aggregation="mean"
+        )
+    
+    # Update manifest
+    manifest.stage = "ingest"
+    manifest.paths = Paths(
+        raw=str(output_dir),
+        intermediate=str(output_dir.parent.parent / "intermediate" / manifest.city),
+        features=str(output_dir.parent.parent / "intermediate" / manifest.city / "features"),
+        exports=str(output_dir.parent.parent / "exports" / manifest.city)
+    )
+    
+    # Save manifest
+    manifest_path = output_dir / "manifest.json"
+    with open(manifest_path, 'w') as f:
+        json.dump(manifest.to_json(), f, indent=2)
+    
+    logger.info(f"✅ ERA5 ingest complete: {len(netcdf_files)} variables")
+    logger.info(f"   Output: {output_dir}")
+    
+    return manifest
+
+
 def ingest_mock_data(config: Dict[str, Any], manifest: Manifest) -> Manifest:
     """
     Mock data ingestion - generates synthetic rasters
     
-    In Phase 2+, this will be replaced with real ERA5/S2/OSM downloads
+    Used when manifest.mode.dry_run is True
     
     Args:
         config: Pipeline configuration
@@ -152,6 +222,23 @@ def ingest_mock_data(config: Dict[str, Any], manifest: Manifest) -> Manifest:
     logger.info(f"   Output: {output_dir}")
     
     return manifest
+
+
+def ingest_stage(config: Dict[str, Any], manifest: Manifest) -> Manifest:
+    """
+    Main ingestion stage - routes to mock or real data based on dry_run flag
+    
+    Args:
+        config: Pipeline configuration
+        manifest: Input manifest
+        
+    Returns:
+        Updated manifest
+    """
+    if manifest.mode and manifest.mode.dry_run:
+        return ingest_mock_data(config, manifest)
+    else:
+        return ingest_era5_data(config, manifest)
 
 
 if __name__ == "__main__":

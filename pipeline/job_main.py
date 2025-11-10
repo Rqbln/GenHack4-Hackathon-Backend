@@ -16,7 +16,7 @@ from datetime import datetime
 
 # Import pipeline stages
 from src.models import Manifest, Period, Grid, Mode, Paths
-from src.ingest import ingest_mock_data
+from src.ingest import ingest_stage
 from src.preprocess import preprocess_stage
 from src.features import features_stage
 from src.train import train_stage
@@ -98,7 +98,7 @@ def run_pipeline(config_path: Path, stages: list = None) -> Manifest:
     
     # Define pipeline stages
     all_stages = [
-        ("ingest", lambda: ingest_mock_data(config, manifest)),
+        ("ingest", lambda: ingest_stage(config, manifest)),
         ("preprocess", lambda: preprocess_stage(config, manifest)),
         ("features", lambda: features_stage(config, manifest)),
         ("train", lambda: train_stage(config, manifest)),

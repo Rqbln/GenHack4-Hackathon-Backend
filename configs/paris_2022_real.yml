@@ -1,0 +1,74 @@
+# ============================================
+# GenHack Climate Configuration - Paris 2022 (REAL DATA)
+# ============================================
+# Configuration for Phase 2 with real ERA5 data
+
+city: "paris"
+
+# Time period for analysis (summer heatwave 2022)
+period:
+  start: "2022-07-15"
+  end: "2022-07-17"  # 3 days for testing
+
+# Target grid specification
+grid:
+  crs: "EPSG:3857"  # Web Mercator
+  resolution_m: 200  # 200m target resolution
+  
+# Geographic extent (Paris metropolitan area)
+extent:
+  # Bounding box in WGS84 (lon/lat)
+  bbox_wgs84: [2.224, 48.815, 2.470, 48.902]
+  # Approximate center
+  center: [2.347, 48.859]
+
+# Climate variables to process
+variables:
+  - "t2m"   # 2-meter temperature
+  - "tx"    # Maximum temperature
+  - "tn"    # Minimum temperature
+  - "rh"    # Relative humidity
+
+# Data sources (Phase 2: real data)
+sources:
+  era5:
+    provider: "copernicus"
+    dataset: "reanalysis-era5-single-levels"
+    path: "gs://gh-raw-era5-genhack-heat-dev/paris/2022/"
+    resolution_km: 25
+    time_aggregation: "mean"  # How to aggregate hourly data
+
+# Processing mode
+mode:
+  dry_run: false  # Phase 2: USE REAL DATA
+  save_intermediate: true
+  verbose: true
+
+# Model configuration
+model:
+  type: "bicubic"  # Phase 2: simple baseline
+  
+# Heat indicators configuration
+indicators:
+  threshold_celsius: 30
+  urban_heat_island_analysis: true
+  
+# Output configuration
+output:
+  formats: ["geotiff", "png", "metadata"]
+  compression: "lzw"
+  tiled: true
+  report:
+    format: ["html", "pdf"]
+    include_maps: true
+    include_metrics: true
+    
+# GCS paths (constructed from PROJECT_ID env var)
+gcs:
+  raw: "gs://gh-raw-{project}/paris/2022/"
+  intermediate: "gs://gh-intermediate-{project}/paris/2022/"
+  features: "gs://gh-intermediate-{project}/paris/2022/features/"
+  models: "gs://gh-models-{project}/experiments/"
+  exports: "gs://gh-exports-{project}/paris/2022/"
+  configs: "gs://gh-configs-{project}/"
+  logs: "gs://gh-logs-{project}/paris/2022/"

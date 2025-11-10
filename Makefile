@@ -55,7 +55,7 @@ dryrun: ## Run pipeline locally with mock data
 		-v /tmp/genhack:/tmp/genhack \
 		-e PROJECT_ID=$(PROJECT_ID) \
 		$(IMAGE_LATEST) \
-		python pipeline/job_main.py --config configs/paris_2022_mock.yml --dry-run
+		--config configs/paris_2022_mock.yml --dry-run
 	@echo "✅ Dry-run complete! Check /tmp/genhack/exports/"
 
 run: ## Execute Cloud Run Job

@@ -31,10 +31,8 @@ Guide pour configurer l'accès aux données ERA5.
 
 ### 4. Récupérer l'API key
 
-1. Sur la page utilisateur : https://cds.climate.copernicus.eu/user
-2. Copier :
-   - **UID** (User ID)
-   - **API Key**
+1. Aller sur votre page utilisateur : https://cds.climate.copernicus.eu/user
+2. Copier votre **API Key** (longue chaîne de caractères avec des tirets)
 
 ---
 
@@ -50,18 +48,16 @@ nano ~/.cdsapirc
 ### Contenu du fichier
 
 ```
-url: https://cds.climate.copernicus.eu/api/v2
-key: {UID}:{API_KEY}
+url: https://cds.climate.copernicus.eu/api
+key: VOTRE_API_KEY
 ```
 
-**Remplacer** :
-- `{UID}` par votre User ID
-- `{API_KEY}` par votre API Key
+**Remplacer `VOTRE_API_KEY`** par l'API Key copiée depuis votre profil CDS.
 
 **Exemple** :
 ```
-url: https://cds.climate.copernicus.eu/api/v2
-key: 12345:abcdef12-3456-7890-abcd-ef1234567890
+url: https://cds.climate.copernicus.eu/api
+key: 1610840b-8925-4df9-a952-8276366bfd69
 ```
 
 ### Permissions

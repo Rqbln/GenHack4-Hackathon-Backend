@@ -36,6 +36,7 @@ google-cloud-logging>=3.8.0
 
 # Climate data (Phase 2+)
 cdsapi>=0.6.1
+earthengine-api>=1.6.0
 
 # Optional: Future ML dependencies (Phase 2+)
 # torch>=2.0.0

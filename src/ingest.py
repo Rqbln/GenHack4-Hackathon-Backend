@@ -18,6 +18,7 @@ from datetime import datetime
 
 from src.models import Manifest, Tile, Paths
 from src.era5_client import ERA5Client
+from src.sentinel2_client import Sentinel2Client
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -143,6 +144,33 @@ def ingest_era5_data(config: Dict[str, Any], manifest: Manifest) -> Manifest:
             var,
             time_aggregation="mean"
         )
+    
+    # Download Sentinel-2 imagery
+    try:
+        logger.info("📡 Downloading Sentinel-2 imagery...")
+        s2_client = Sentinel2Client()
+        s2_files = s2_client.download_sentinel2(
+            bbox=bbox,
+            start_date=manifest.period.start,
+            end_date=manifest.period.end,
+            output_dir=output_dir,
+            max_cloud_cover=20.0,
+            scale=10,
+            bands=['B4', 'B8', 'B11']  # Red, NIR, SWIR for NDVI/NDBI
+        )
+        
+        # Compute NDVI and NDBI if we have the required bands
+        if 'nir' in s2_files and 'red' in s2_files:
+            ndvi_file = output_dir / "ndvi.tif"
+            s2_client.compute_ndvi(s2_files['nir'], s2_files['red'], ndvi_file)
+        
+        if 'swir1' in s2_files and 'nir' in s2_files:
+            ndbi_file = output_dir / "ndbi.tif"
+            s2_client.compute_ndbi(s2_files['swir1'], s2_files['nir'], ndbi_file)
+        
+        logger.info(f"✅ Sentinel-2 download complete: {len(s2_files)} bands")
+    except Exception as e:
+        logger.warning(f"⚠️ Sentinel-2 download failed (continuing with ERA5 only): {e}")
     
     # Update manifest
     manifest.stage = "ingest"

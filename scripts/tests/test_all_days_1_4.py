@@ -57,6 +57,7 @@ def main():
         ("Day 1: ETL Pipeline (Structure)", tests_dir / "test_etl_simple.py"),
         ("Day 2: Gap Filling (Structure)", tests_dir / "test_gap_filling_simple.py"),
         ("Day 3: Baseline Model (Structure)", tests_dir / "test_baseline_simple.py"),
+        ("Day 4: GADM Indicators (Structure)", tests_dir / "test_gadm_simple.py"),
         ("Syntax Validation", tests_dir / "test_syntax.py"),
     ]
     

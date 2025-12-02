@@ -52,6 +52,14 @@ def test_imports():
     except Exception as e:
         results["baseline.py"] = (False, str(e))
     
+    # Test GADM indicators module
+    try:
+        gadm_file = project_root / "src" / "gadm_indicators.py"
+        success, error = test_syntax(gadm_file)
+        results["gadm_indicators.py"] = (success, error)
+    except Exception as e:
+        results["gadm_indicators.py"] = (False, str(e))
+    
     return results
 
 def main():

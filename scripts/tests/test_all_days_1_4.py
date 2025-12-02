@@ -64,6 +64,7 @@ def main():
         ("Day 9: Model Analysis (Structure)", tests_dir / "test_model_analysis_simple.py"),
         ("Day 10: Advanced Metrics (Structure)", tests_dir / "test_advanced_metrics_simple.py"),
         ("Day 11: Product Generation (Structure)", tests_dir / "test_product_generation_simple.py"),
+        ("Day 12: Physics Validation (Structure)", tests_dir / "test_physics_validation_simple.py"),
         ("Syntax Validation", tests_dir / "test_syntax.py"),
     ]
     

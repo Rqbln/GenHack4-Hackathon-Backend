@@ -108,6 +108,14 @@ def test_imports():
     except Exception as e:
         results["product_generation.py"] = (False, str(e))
     
+    # Test physics validation module
+    try:
+        physics_file = project_root / "src" / "physics_validation.py"
+        success, error = test_syntax(physics_file)
+        results["physics_validation.py"] = (success, error)
+    except Exception as e:
+        results["physics_validation.py"] = (False, str(e))
+    
     return results
 
 def main():

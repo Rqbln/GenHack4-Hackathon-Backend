@@ -60,6 +60,14 @@ def test_imports():
     except Exception as e:
         results["gadm_indicators.py"] = (False, str(e))
     
+    # Test Prithvi setup module
+    try:
+        prithvi_file = project_root / "src" / "prithvi_setup.py"
+        success, error = test_syntax(prithvi_file)
+        results["prithvi_setup.py"] = (success, error)
+    except Exception as e:
+        results["prithvi_setup.py"] = (False, str(e))
+    
     return results
 
 def main():

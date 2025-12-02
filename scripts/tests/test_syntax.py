@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""
+Syntax and import validation tests
+Tests that code compiles and basic structure is correct
+"""
+
+import sys
+import ast
+from pathlib import Path
+
+def test_syntax(file_path):
+    """Test that a Python file has valid syntax"""
+    try:
+        with open(file_path, 'r') as f:
+            source = f.read()
+        ast.parse(source)
+        return True, None
+    except SyntaxError as e:
+        return False, str(e)
+    except Exception as e:
+        return False, str(e)
+
+def test_imports():
+    """Test that modules can be imported (may fail if deps missing, but syntax should be OK)"""
+    project_root = Path(__file__).parent.parent.parent
+    sys.path.insert(0, str(project_root))
+    
+    results = {}
+    
+    # Test ETL module
+    try:
+        # Just check syntax, don't actually import (deps may be missing)
+        etl_file = project_root / "src" / "etl.py"
+        success, error = test_syntax(etl_file)
+        results["etl.py"] = (success, error)
+    except Exception as e:
+        results["etl.py"] = (False, str(e))
+    
+    # Test gap_filling module
+    try:
+        gap_file = project_root / "src" / "gap_filling.py"
+        success, error = test_syntax(gap_file)
+        results["gap_filling.py"] = (success, error)
+    except Exception as e:
+        results["gap_filling.py"] = (False, str(e))
+    
+    # Test baseline module
+    try:
+        baseline_file = project_root / "src" / "baseline.py"
+        success, error = test_syntax(baseline_file)
+        results["baseline.py"] = (success, error)
+    except Exception as e:
+        results["baseline.py"] = (False, str(e))
+    
+    return results
+
+def main():
+    print("=" * 60)
+    print("Syntax and Structure Validation")
+    print("=" * 60)
+    
+    results = test_imports()
+    
+    all_passed = True
+    for module, (success, error) in results.items():
+        if success:
+            print(f"✅ {module} - Syntax OK")
+        else:
+            print(f"❌ {module} - Syntax Error: {error}")
+            all_passed = False
+    
+    print("=" * 60)
+    if all_passed:
+        print("✅ All syntax checks passed!")
+        return 0
+    else:
+        print("❌ Some syntax checks failed!")
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())
+

@@ -242,9 +242,10 @@ Phase 2 (données réelles)	🔜 À venir
 ⸻
 
 📚 Documentation
-	•	ARCHITECTURE.md￼ – System design
-	•	SCHEMAS.md￼ – Data contracts
-	•	REPRODUCE.md￼ – Step-by-step reproduction
+	•	ARCHITECTURE.md – System design
+	•	SCHEMAS.md – Data contracts
+	•	REPRODUCE.md – Step-by-step reproduction
+	•	**GCP_INFRASTRUCTURE.md** – 📊 **Comprehensive GCP stack analysis** (NEW)
 
 ⸻
 

@@ -100,6 +100,14 @@ def test_imports():
     except Exception as e:
         results["advanced_metrics.py"] = (False, str(e))
     
+    # Test product generation module
+    try:
+        product_file = project_root / "src" / "product_generation.py"
+        success, error = test_syntax(product_file)
+        results["product_generation.py"] = (success, error)
+    except Exception as e:
+        results["product_generation.py"] = (False, str(e))
+    
     return results
 
 def main():

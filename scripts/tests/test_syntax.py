@@ -68,6 +68,14 @@ def test_imports():
     except Exception as e:
         results["prithvi_setup.py"] = (False, str(e))
     
+    # Test dataset preparation module
+    try:
+        dataset_file = project_root / "src" / "dataset_preparation.py"
+        success, error = test_syntax(dataset_file)
+        results["dataset_preparation.py"] = (success, error)
+    except Exception as e:
+        results["dataset_preparation.py"] = (False, str(e))
+    
     return results
 
 def main():

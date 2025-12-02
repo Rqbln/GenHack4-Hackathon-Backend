@@ -59,6 +59,7 @@ def main():
         ("Day 3: Baseline Model (Structure)", tests_dir / "test_baseline_simple.py"),
         ("Day 4: GADM Indicators (Structure)", tests_dir / "test_gadm_simple.py"),
         ("Day 5: Prithvi WxC Setup (Structure)", tests_dir / "test_prithvi_simple.py"),
+        ("Day 6: Dataset Preparation (Structure)", tests_dir / "test_dataset_prep_simple.py"),
         ("Syntax Validation", tests_dir / "test_syntax.py"),
     ]
     

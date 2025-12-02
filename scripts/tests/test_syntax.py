@@ -92,6 +92,14 @@ def test_imports():
     except Exception as e:
         results["model_analysis.py"] = (False, str(e))
     
+    # Test advanced metrics module
+    try:
+        metrics_file = project_root / "src" / "advanced_metrics.py"
+        success, error = test_syntax(metrics_file)
+        results["advanced_metrics.py"] = (success, error)
+    except Exception as e:
+        results["advanced_metrics.py"] = (False, str(e))
+    
     return results
 
 def main():

@@ -84,6 +84,14 @@ def test_imports():
     except Exception as e:
         results["finetuning.py"] = (False, str(e))
     
+    # Test model analysis module
+    try:
+        analysis_file = project_root / "src" / "model_analysis.py"
+        success, error = test_syntax(analysis_file)
+        results["model_analysis.py"] = (success, error)
+    except Exception as e:
+        results["model_analysis.py"] = (False, str(e))
+    
     return results
 
 def main():

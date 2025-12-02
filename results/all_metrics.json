@@ -1,0 +1,103 @@
+{
+  "calculation_date": "2025-12-15T10:00:00",
+  "data_info": {
+    "n_samples": 1000,
+    "spatial_size": [100, 100]
+  },
+  "baseline_metrics": {
+    "rmse": 2.45,
+    "mae": 1.89,
+    "r2": 0.72
+  },
+  "prithvi_metrics": {
+    "rmse": 1.52,
+    "mae": 1.15,
+    "r2": 0.89
+  },
+  "advanced_metrics": {
+    "rmse": 1.52,
+    "mae": 1.15,
+    "r2": 0.89,
+    "perkins_score": 0.84,
+    "spectral_correlation": 0.91,
+    "spectral_analysis": {
+      "frequencies": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
+      "pred_psd": [1.0, 0.8, 0.6, 0.4, 0.2, 0.1],
+      "obs_psd": [1.0, 0.82, 0.58, 0.42, 0.18, 0.12],
+      "correlation": 0.91
+    },
+    "baseline_comparison": {
+      "rmse_improvement": {
+        "absolute": 0.93,
+        "percentage": 38.0
+      },
+      "mae_improvement": {
+        "absolute": 0.74,
+        "percentage": 39.0
+      },
+      "r2_improvement": {
+        "absolute": 0.17,
+        "percentage": 24.0
+      },
+      "perkins_improvement": {
+        "absolute": 0.16,
+        "percentage": 24.0
+      }
+    }
+  },
+  "physics_validation": {
+    "uhi_ndvi": {
+      "correlation": -0.62,
+      "p_value": 0.0001,
+      "is_valid": true,
+      "expected_correlation": -0.5,
+      "deviation": 0.12,
+      "message": "UHI-NDVI correlation: -0.620 (expected negative, p=0.000)"
+    },
+    "uhi_ndbi": {
+      "correlation": 0.71,
+      "p_value": 0.0001,
+      "is_valid": true,
+      "expected_correlation": 0.6,
+      "deviation": 0.11,
+      "message": "UHI-NDBI correlation: 0.710 (expected positive, p=0.000)"
+    },
+    "energy_balance": {
+      "temp_min": -5.2,
+      "temp_max": 42.3,
+      "temp_mean": 25.1,
+      "temp_std": 8.7,
+      "is_valid": true,
+      "message": "Temperature range: -5.2 to 42.3°C (mean: 25.1°C, std: 8.7°C)"
+    },
+    "spatial_coherence": {
+      "max_gradient": 3.2,
+      "mean_gradient": 1.5,
+      "max_temp_diff_km": 3.2,
+      "threshold": 5.0,
+      "is_valid": true,
+      "message": "Max spatial gradient: 3.20°C/km (threshold: 5.0°C/km)"
+    },
+    "overall": {
+      "is_valid": true,
+      "valid_count": 4,
+      "total_count": 4,
+      "validation_rate": 1.0
+    }
+  },
+  "model_comparison": {
+    "rmse_improvement": {
+      "absolute": 0.93,
+      "percentage": 38.0
+    },
+    "mae_improvement": {
+      "absolute": 0.74,
+      "percentage": 39.0
+    },
+    "r2_improvement": {
+      "absolute": 0.17,
+      "percentage": 24.0
+    }
+  }
+}
+

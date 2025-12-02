@@ -116,6 +116,14 @@ def test_imports():
     except Exception as e:
         results["physics_validation.py"] = (False, str(e))
     
+    # Test export results module
+    try:
+        export_file = project_root / "src" / "export_results.py"
+        success, error = test_syntax(export_file)
+        results["export_results.py"] = (success, error)
+    except Exception as e:
+        results["export_results.py"] = (False, str(e))
+    
     return results
 
 def main():

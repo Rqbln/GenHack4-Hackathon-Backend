@@ -354,7 +354,23 @@ class ETLPipeline:
                 era5_datasets[key] = self.load_era5_data(variable, year, bbox_tuple)
         
         # 3. Combine ERA5 datasets
-        era5_combined = xr.merge(list(era5_datasets.values()))
+        # Group by year first, then merge
+        era5_by_year = {}
+        for year in years:
+            year_datasets = [ds for key, ds in era5_datasets.items() if key.endswith(f"_{year}")]
+            if year_datasets:
+                era5_by_year[year] = xr.merge(year_datasets)
+        
+        # Concatenate across years
+        if len(era5_by_year) > 1:
+            era5_combined = xr.concat(
+                [era5_by_year[year] for year in sorted(era5_by_year.keys())],
+                dim='valid_time'
+            )
+        elif len(era5_by_year) == 1:
+            era5_combined = list(era5_by_year.values())[0]
+        else:
+            raise ValueError("No ERA5 datasets loaded")
         
         # 4. Load NDVI data
         ndvi_data = {}

@@ -15,17 +15,22 @@ logger = logging.getLogger(__name__)
 
 # Load metrics from results file
 METRICS_FILE = Path(__file__).parent.parent / "results" / "all_metrics.json"
+STATIONS_FILE = Path(__file__).parent.parent / "data" / "processed" / "stations.geojson"
+BOUNDARY_FILE = Path(__file__).parent.parent / "data" / "processed" / "city_boundary.geojson"
 
 def load_metrics():
     """Load metrics data from JSON file"""
     if METRICS_FILE.exists():
         try:
             with open(METRICS_FILE, 'r') as f:
-                return json.load(f)
+                metrics = json.load(f)
+                logger.info("✅ Loaded real metrics from file")
+                return metrics
         except Exception as e:
             logger.error(f"Failed to load metrics: {e}")
     
     # Return mock data if file doesn't exist
+    logger.warning("Using mock metrics (real metrics file not found)")
     return {
         "baseline_metrics": {"rmse": 2.45, "mae": 1.89, "r2": 0.72},
         "prithvi_metrics": {"rmse": 1.52, "mae": 1.15, "r2": 0.89},
@@ -39,6 +44,62 @@ def load_metrics():
         "physics_validation": {
             "overall": {"is_valid": True, "valid_count": 4, "total_count": 4}
         }
+    }
+
+def load_stations():
+    """Load stations from GeoJSON file"""
+    if STATIONS_FILE.exists():
+        try:
+            with open(STATIONS_FILE, 'r') as f:
+                stations_data = json.load(f)
+                stations = []
+                for feature in stations_data.get('features', []):
+                    props = feature.get('properties', {})
+                    coords = feature.get('geometry', {}).get('coordinates', [])
+                    if len(coords) >= 2:
+                        stations.append({
+                            "staid": props.get('STAID', len(stations) + 1),
+                            "staname": props.get('STANAME', f"Station {len(stations) + 1}"),
+                            "country": props.get('CN', 'FRA'),
+                            "latitude": coords[1],
+                            "longitude": coords[0],
+                            "elevation": props.get('HGHT', 0)
+                        })
+                if stations:
+                    logger.info(f"✅ Loaded {len(stations)} real stations from file")
+                    return {"stations": stations}
+        except Exception as e:
+            logger.error(f"Failed to load stations: {e}")
+    
+    # Return mock stations if file doesn't exist
+    logger.warning("Using mock stations (real stations file not found)")
+    return {
+        "stations": [
+            {
+                "staid": 1,
+                "staname": "Paris Montsouris",
+                "country": "FRA",
+                "latitude": 48.8222,
+                "longitude": 2.3364,
+                "elevation": 75
+            },
+            {
+                "staid": 2,
+                "staname": "Paris Orly",
+                "country": "FRA",
+                "latitude": 48.7233,
+                "longitude": 2.3794,
+                "elevation": 89
+            },
+            {
+                "staid": 3,
+                "staname": "Paris Le Bourget",
+                "country": "FRA",
+                "latitude": 48.9694,
+                "longitude": 2.4414,
+                "elevation": 66
+            }
+        ]
     }
 
 class APIHandler(BaseHTTPRequestHandler):
@@ -70,43 +131,42 @@ class APIHandler(BaseHTTPRequestHandler):
         if path == '/' or path == '/health':
             response = {"status": "healthy", "version": "1.0.0", "service": "chronos-wxc-api"}
         elif path == '/api/stations':
-            response = {
-                "stations": [
-                    {
-                        "staid": 1,
-                        "staname": "Paris Montsouris",
-                        "country": "FRA",
-                        "latitude": 48.8222,
-                        "longitude": 2.3364,
-                        "elevation": 75
-                    },
-                    {
-                        "staid": 2,
-                        "staname": "Paris Orly",
-                        "country": "FRA",
-                        "latitude": 48.7233,
-                        "longitude": 2.3794,
-                        "elevation": 89
-                    },
-                    {
-                        "staid": 3,
-                        "staname": "Paris Le Bourget",
-                        "country": "FRA",
-                        "latitude": 48.9694,
-                        "longitude": 2.4414,
-                        "elevation": 66
-                    }
-                ]
-            }
+            response = load_stations()
         elif path == '/api/metrics':
             metrics = load_metrics()
-            response = metrics
+            # Return formatted response with real metrics
+            response = {
+                "baseline_metrics": metrics.get("baseline_metrics", {}),
+                "prithvi_metrics": metrics.get("prithvi_metrics", {}),
+                "advanced_metrics": metrics.get("advanced_metrics", {}),
+                "data_info": metrics.get("data_info", {}),
+                "calculation_date": metrics.get("calculation_date", "")
+            }
         elif path == '/api/metrics/comparison':
             metrics = load_metrics()
+            baseline = metrics.get("baseline_metrics", {})
+            prithvi = metrics.get("prithvi_metrics", {})
+            
+            # Calculate comparison if both are available
+            comparison = {}
+            if baseline.get("rmse") and prithvi.get("rmse"):
+                comparison = {
+                    "rmse_improvement": {
+                        "absolute": round(baseline["rmse"] - prithvi["rmse"], 2),
+                        "percentage": round((baseline["rmse"] - prithvi["rmse"]) / baseline["rmse"] * 100, 1)
+                    },
+                    "mae_improvement": {
+                        "absolute": round(baseline.get("mae", 0) - prithvi.get("mae", 0), 2),
+                        "percentage": round((baseline.get("mae", 0) - prithvi.get("mae", 0)) / baseline.get("mae", 1) * 100, 1) if baseline.get("mae") else 0
+                    }
+                }
+            else:
+                comparison = metrics.get("model_comparison", {})
+            
             response = {
-                "baseline": metrics.get("baseline_metrics", {}),
-                "prithvi": metrics.get("prithvi_metrics", {}),
-                "comparison": metrics.get("model_comparison", {})
+                "baseline": baseline,
+                "prithvi": prithvi,
+                "comparison": comparison
             }
         elif path == '/api/metrics/advanced':
             metrics = load_metrics()

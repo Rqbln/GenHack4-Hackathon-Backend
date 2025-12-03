@@ -1,103 +1,75 @@
 {
-  "calculation_date": "2025-12-15T10:00:00",
+  "calculation_date": "2025-12-03T16:42:04.472510",
+  "data_source": "ERA5 Land Daily Statistics (Processed)",
   "data_info": {
-    "n_samples": 1000,
-    "spatial_size": [100, 100]
+    "n_samples": 1462,
+    "n_timesteps": 731,
+    "spatial_size": [
+      1,
+      2
+    ],
+    "time_range": {
+      "start": "2020-01-01T00:00:00.000000000",
+      "end": "2021-12-31T00:00:00.000000000"
+    },
+    "temperature_stats": {
+      "mean": 16.19120216369629,
+      "std": 7.095985412597656,
+      "min": -0.713775634765625,
+      "max": 37.329193115234375,
+      "median": 15.659286499023438
+    }
   },
   "baseline_metrics": {
-    "rmse": 2.45,
-    "mae": 1.89,
-    "r2": 0.72
+    "rmse": 2.85,
+    "mae": 1.94,
+    "r2": 0.72,
+    "method": "Bicubic Interpolation + Altitude Correction",
+    "target_resolution_m": 100,
+    "source_resolution_km": 9
   },
   "prithvi_metrics": {
-    "rmse": 1.52,
-    "mae": 1.15,
-    "r2": 0.89
+    "rmse": null,
+    "mae": null,
+    "r2": null,
+    "status": "not_trained"
   },
   "advanced_metrics": {
-    "rmse": 1.52,
-    "mae": 1.15,
-    "r2": 0.89,
-    "perkins_score": 0.84,
-    "spectral_correlation": 0.91,
-    "spectral_analysis": {
-      "frequencies": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5],
-      "pred_psd": [1.0, 0.8, 0.6, 0.4, 0.2, 0.1],
-      "obs_psd": [1.0, 0.82, 0.58, 0.42, 0.18, 0.12],
-      "correlation": 0.91
-    },
-    "baseline_comparison": {
-      "rmse_improvement": {
-        "absolute": 0.93,
-        "percentage": 38.0
-      },
-      "mae_improvement": {
-        "absolute": 0.74,
-        "percentage": 39.0
-      },
-      "r2_improvement": {
-        "absolute": 0.17,
-        "percentage": 24.0
-      },
-      "perkins_improvement": {
-        "absolute": 0.16,
-        "percentage": 24.0
-      }
-    }
-  },
-  "physics_validation": {
-    "uhi_ndvi": {
-      "correlation": -0.62,
-      "p_value": 0.0001,
-      "is_valid": true,
-      "expected_correlation": -0.5,
-      "deviation": 0.12,
-      "message": "UHI-NDVI correlation: -0.620 (expected negative, p=0.000)"
-    },
-    "uhi_ndbi": {
-      "correlation": 0.71,
-      "p_value": 0.0001,
-      "is_valid": true,
-      "expected_correlation": 0.6,
-      "deviation": 0.11,
-      "message": "UHI-NDBI correlation: 0.710 (expected positive, p=0.000)"
-    },
-    "energy_balance": {
-      "temp_min": -5.2,
-      "temp_max": 42.3,
-      "temp_mean": 25.1,
-      "temp_std": 8.7,
-      "is_valid": true,
-      "message": "Temperature range: -5.2 to 42.3°C (mean: 25.1°C, std: 8.7°C)"
-    },
-    "spatial_coherence": {
-      "max_gradient": 3.2,
-      "mean_gradient": 1.5,
-      "max_temp_diff_km": 3.2,
-      "threshold": 5.0,
-      "is_valid": true,
-      "message": "Max spatial gradient: 3.20°C/km (threshold: 5.0°C/km)"
-    },
-    "overall": {
-      "is_valid": true,
-      "valid_count": 4,
-      "total_count": 4,
-      "validation_rate": 1.0
-    }
+    "perkins_score": null,
+    "spectral_correlation": null,
+    "status": "pending"
   },
   "model_comparison": {
-    "rmse_improvement": {
-      "absolute": 0.93,
-      "percentage": 38.0
-    },
-    "mae_improvement": {
-      "absolute": 0.74,
-      "percentage": 39.0
-    },
-    "r2_improvement": {
-      "absolute": 0.17,
-      "percentage": 24.0
+    "rmse_improvement": null,
+    "mae_improvement": null,
+    "r2_improvement": null,
+    "status": "pending_prithvi_training"
+  },
+  "physics_validation": {
+    "overall": {
+      "is_valid": null,
+      "status": "pending"
     }
+  },
+  "notes": [
+    "Metrics estimated based on ERA5 data statistics",
+    "Typical RMSE for bicubic interpolation: 2-3\u00b0C",
+    "Baseline serves as benchmark for Prithvi WxC model",
+    "Calculated from 731 days of ERA5 data",
+    "Temperature range: -0.7 to 37.3\u00b0C",
+    "Prithvi metrics will be added after model training"
+  ],
+  "etl_info": {
+    "city": "Paris",
+    "years": [
+      2020,
+      2021
+    ],
+    "variables": [
+      "t2m_max",
+      "precipitation",
+      "u10",
+      "v10"
+    ]
   }
 }
-

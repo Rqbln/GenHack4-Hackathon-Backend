@@ -1,0 +1,31 @@
+{
+  "city": "Paris",
+  "years": [
+    2020,
+    2021
+  ],
+  "variables": [
+    "t2m_max",
+    "precipitation",
+    "u10",
+    "v10"
+  ],
+  "n_stations": 0,
+  "era5_shape": {
+    "valid_time": 731,
+    "latitude": 1,
+    "longitude": 2
+  },
+  "era5_variables": [
+    "t2m",
+    "tp",
+    "u10",
+    "v10"
+  ],
+  "bbox": [
+    2.2242245680001815,
+    48.81575775100009,
+    2.467259646000116,
+    48.90165329100006
+  ]
+}

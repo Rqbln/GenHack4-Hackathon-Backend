@@ -102,90 +102,106 @@ def load_stations():
     }
 
 # Vercel Python serverless function handler
-# The handler receives a request object with 'path', 'method', 'headers', 'body', etc.
+# Vercel passes request as an object with 'path', 'method', 'headers', 'body', etc.
 def handler(request):
     """Vercel serverless function handler"""
-    # Extract path and method from request
-    # Vercel passes the request as a dict-like object
-    path = request.get('path', '/') if isinstance(request, dict) else getattr(request, 'path', '/')
-    method = request.get('method', 'GET') if isinstance(request, dict) else getattr(request, 'method', 'GET')
-    
-    # CORS headers
-    headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Content-Type': 'application/json'
-    }
-    
-    # Handle OPTIONS (CORS preflight)
-    if method == 'OPTIONS':
+    try:
+        # Extract path and method from request
+        # Vercel passes the request as an object with attributes
+        if hasattr(request, 'path'):
+            path = request.path
+            method = request.method if hasattr(request, 'method') else 'GET'
+        elif isinstance(request, dict):
+            path = request.get('path', '/')
+            method = request.get('method', 'GET')
+        else:
+            # Try to get from request object attributes
+            path = getattr(request, 'path', '/')
+            method = getattr(request, 'method', 'GET')
+        
+        # CORS headers
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Content-Type': 'application/json'
+        }
+        
+        # Handle OPTIONS (CORS preflight)
+        if method == 'OPTIONS':
+            return {
+                'statusCode': 200,
+                'headers': headers,
+                'body': ''
+            }
+        
+        # Route handling
+        if path == '/' or path == '/health':
+            response = {"status": "healthy", "version": "1.0.0", "service": "chronos-wxc-api"}
+        elif path == '/api/stations':
+            response = load_stations()
+        elif path == '/api/metrics':
+            metrics = load_metrics()
+            response = {
+                "baseline_metrics": metrics.get("baseline_metrics", {}),
+                "prithvi_metrics": metrics.get("prithvi_metrics", {}),
+                "advanced_metrics": metrics.get("advanced_metrics", {}),
+                "data_info": metrics.get("data_info", {}),
+                "calculation_date": metrics.get("calculation_date", "")
+            }
+        elif path == '/api/metrics/comparison':
+            metrics = load_metrics()
+            baseline = metrics.get("baseline_metrics", {})
+            prithvi = metrics.get("prithvi_metrics", {})
+            
+            comparison = {}
+            if baseline.get("rmse") and prithvi.get("rmse"):
+                comparison = {
+                    "rmse_improvement": {
+                        "absolute": round(baseline["rmse"] - prithvi["rmse"], 2),
+                        "percentage": round((baseline["rmse"] - prithvi["rmse"]) / baseline["rmse"] * 100, 1)
+                    },
+                    "mae_improvement": {
+                        "absolute": round(baseline.get("mae", 0) - prithvi.get("mae", 0), 2),
+                        "percentage": round((baseline.get("mae", 0) - prithvi.get("mae", 0)) / baseline.get("mae", 1) * 100, 1) if baseline.get("mae") else 0
+                    }
+                }
+            else:
+                comparison = metrics.get("model_comparison", {})
+            
+            response = comparison
+        elif path == '/api/metrics/advanced':
+            metrics = load_metrics()
+            response = metrics.get("advanced_metrics", {})
+        elif path == '/api/validation/physics':
+            metrics = load_metrics()
+            response = metrics.get("physics_validation", {})
+        elif path.startswith('/api/temperature'):
+            # Mock temperature data for now
+            response = {
+                "data": [
+                    {"date": "2020-01-01", "temperature": 5.2, "quality": 0},
+                    {"date": "2020-01-02", "temperature": 6.1, "quality": 0},
+                    {"date": "2020-01-03", "temperature": 7.3, "quality": 0}
+                ]
+            }
+        else:
+            response = {"error": "Not found"}
+            return {
+                'statusCode': 404,
+                'headers': headers,
+                'body': json.dumps(response)
+            }
+        
         return {
             'statusCode': 200,
             'headers': headers,
-            'body': ''
+            'body': json.dumps(response, indent=2)
         }
-    
-    # Route handling
-    if path == '/' or path == '/health':
-        response = {"status": "healthy", "version": "1.0.0", "service": "chronos-wxc-api"}
-    elif path == '/api/stations':
-        response = load_stations()
-    elif path == '/api/metrics':
-        metrics = load_metrics()
-        response = {
-            "baseline_metrics": metrics.get("baseline_metrics", {}),
-            "prithvi_metrics": metrics.get("prithvi_metrics", {}),
-            "advanced_metrics": metrics.get("advanced_metrics", {}),
-            "data_info": metrics.get("data_info", {}),
-            "calculation_date": metrics.get("calculation_date", "")
-        }
-    elif path == '/api/metrics/comparison':
-        metrics = load_metrics()
-        baseline = metrics.get("baseline_metrics", {})
-        prithvi = metrics.get("prithvi_metrics", {})
-        
-        comparison = {}
-        if baseline.get("rmse") and prithvi.get("rmse"):
-            comparison = {
-                "rmse_improvement": {
-                    "absolute": round(baseline["rmse"] - prithvi["rmse"], 2),
-                    "percentage": round((baseline["rmse"] - prithvi["rmse"]) / baseline["rmse"] * 100, 1)
-                },
-                "mae_improvement": {
-                    "absolute": round(baseline.get("mae", 0) - prithvi.get("mae", 0), 2),
-                    "percentage": round((baseline.get("mae", 0) - prithvi.get("mae", 0)) / baseline.get("mae", 1) * 100, 1) if baseline.get("mae") else 0
-                }
-            }
-        else:
-            comparison = metrics.get("model_comparison", {})
-        
-        response = comparison
-    elif path == '/api/metrics/advanced':
-        metrics = load_metrics()
-        response = metrics.get("advanced_metrics", {})
-    elif path == '/api/validation/physics':
-        metrics = load_metrics()
-        response = metrics.get("physics_validation", {})
-    elif path.startswith('/api/temperature'):
-        # Mock temperature data for now
-        response = {
-            "data": [
-                {"date": "2020-01-01", "temperature": 5.2, "quality": 0},
-                {"date": "2020-01-02", "temperature": 6.1, "quality": 0},
-                {"date": "2020-01-03", "temperature": 7.3, "quality": 0}
-            ]
-        }
-    else:
-        response = {"error": "Not found"}
+    except Exception as e:
+        logger.error(f"Error in handler: {e}", exc_info=True)
         return {
-            'statusCode': 404,
-            'headers': headers,
-            'body': json.dumps(response)
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({"error": str(e)})
         }
-    
-    return {
-        'statusCode': 200,
-        'headers': headers,
-        'body': json.dumps(response, indent=2)
-    }

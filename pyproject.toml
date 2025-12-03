@@ -1,0 +1,9 @@
+[project]
+name = "genhack4-hackathon-vertex"
+version = "1.0.0"
+requires-python = ">=3.11,<3.12"
+description = "GenHack Climate API - Backend for downscaling climate data"
+
+[tool.poetry]
+# Poetry configuration for Vercel Python detection
+

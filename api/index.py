@@ -2,12 +2,13 @@
 Vercel Serverless Function for GenHack API
 Adapted from api_simple.py for Vercel deployment
 
-Vercel Python functions receive a request object and return a response dict
+Vercel Python functions use BaseHTTPRequestHandler, not AWS Lambda format
 """
 
 import json
 from pathlib import Path
 import logging
+from urllib.parse import urlparse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -101,62 +102,71 @@ def load_stations():
         ]
     }
 
-# Vercel Python serverless function handler
-# Vercel passes request as an object with 'path', 'method', 'headers', 'body', etc.
+# --- HANDLER VERCEL CORRIGÉ ---
+
 def handler(request):
-    """Vercel serverless function handler"""
+    """
+    Vercel serverless function handler.
+    'request' est une instance de http.server.BaseHTTPRequestHandler
+    """
+    
+    # Fonction utilitaire pour envoyer la réponse proprement
+    def send_json(status_code, data):
+        request.send_response(status_code)
+        # Headers CORS
+        request.send_header('Access-Control-Allow-Origin', '*')
+        request.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        request.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        request.send_header('Content-Type', 'application/json')
+        request.end_headers()
+        # Écriture du corps de la réponse
+        request.wfile.write(json.dumps(data, indent=2).encode('utf-8'))
+
     try:
-        # Extract path and method from request
-        # Vercel passes the request as an object with attributes
-        if hasattr(request, 'path'):
-            path = request.path
-            method = request.method if hasattr(request, 'method') else 'GET'
-        elif isinstance(request, dict):
-            path = request.get('path', '/')
-            method = request.get('method', 'GET')
-        else:
-            # Try to get from request object attributes
-            path = getattr(request, 'path', '/')
-            method = getattr(request, 'method', 'GET')
+        # 1. Extraction propre de la méthode et du chemin
+        # Sur Vercel (BaseHTTPRequestHandler), la méthode est dans .command
+        method = request.command 
         
-        # CORS headers
-        headers = {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-            'Content-Type': 'application/json'
-        }
-        
-        # Handle OPTIONS (CORS preflight)
+        # Le path peut contenir des query params (?id=1), on nettoie avec urlparse
+        parsed_url = urlparse(request.path)
+        path = parsed_url.path
+
+        # 2. Gestion OPTIONS (CORS Preflight)
         if method == 'OPTIONS':
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': ''
-            }
-        
-        # Route handling
+            request.send_response(200)
+            request.send_header('Access-Control-Allow-Origin', '*')
+            request.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            request.send_header('Access-Control-Allow-Headers', 'Content-Type')
+            request.end_headers()
+            return # On arrête là, pas de body pour OPTIONS
+
+        # 3. Routing
+        response_data = {}
+        status = 200
+
         if path == '/' or path == '/health':
-            response = {"status": "healthy", "version": "1.0.0", "service": "chronos-wxc-api"}
+            response_data = {"status": "healthy", "version": "1.0.0", "service": "chronos-wxc-api"}
+        
         elif path == '/api/stations':
-            response = load_stations()
+            response_data = load_stations()
+        
         elif path == '/api/metrics':
             metrics = load_metrics()
-            response = {
+            response_data = {
                 "baseline_metrics": metrics.get("baseline_metrics", {}),
                 "prithvi_metrics": metrics.get("prithvi_metrics", {}),
                 "advanced_metrics": metrics.get("advanced_metrics", {}),
                 "data_info": metrics.get("data_info", {}),
                 "calculation_date": metrics.get("calculation_date", "")
             }
+        
         elif path == '/api/metrics/comparison':
             metrics = load_metrics()
             baseline = metrics.get("baseline_metrics", {})
             prithvi = metrics.get("prithvi_metrics", {})
             
-            comparison = {}
             if baseline.get("rmse") and prithvi.get("rmse"):
-                comparison = {
+                response_data = {
                     "rmse_improvement": {
                         "absolute": round(baseline["rmse"] - prithvi["rmse"], 2),
                         "percentage": round((baseline["rmse"] - prithvi["rmse"]) / baseline["rmse"] * 100, 1)
@@ -167,41 +177,34 @@ def handler(request):
                     }
                 }
             else:
-                comparison = metrics.get("model_comparison", {})
-            
-            response = comparison
+                response_data = metrics.get("model_comparison", {})
+        
         elif path == '/api/metrics/advanced':
             metrics = load_metrics()
-            response = metrics.get("advanced_metrics", {})
+            response_data = metrics.get("advanced_metrics", {})
+        
         elif path == '/api/validation/physics':
             metrics = load_metrics()
-            response = metrics.get("physics_validation", {})
+            response_data = metrics.get("physics_validation", {})
+        
         elif path.startswith('/api/temperature'):
             # Mock temperature data for now
-            response = {
+            response_data = {
                 "data": [
                     {"date": "2020-01-01", "temperature": 5.2, "quality": 0},
                     {"date": "2020-01-02", "temperature": 6.1, "quality": 0},
                     {"date": "2020-01-03", "temperature": 7.3, "quality": 0}
                 ]
             }
-        else:
-            response = {"error": "Not found"}
-            return {
-                'statusCode': 404,
-                'headers': headers,
-                'body': json.dumps(response)
-            }
         
-        return {
-            'statusCode': 200,
-            'headers': headers,
-            'body': json.dumps(response, indent=2)
-        }
+        else:
+            response_data = {"error": f"Path not found: {path}"}
+            status = 404
+
+        # 4. Envoi de la réponse finale
+        send_json(status, response_data)
+
     except Exception as e:
         logger.error(f"Error in handler: {e}", exc_info=True)
-        return {
-            'statusCode': 500,
-            'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps({"error": str(e)})
-        }
+        # En cas d'erreur fatale, on renvoie une 500 correctement formatée
+        send_json(500, {"error": str(e)})

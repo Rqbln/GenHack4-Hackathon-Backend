@@ -112,37 +112,38 @@ def main():
     all_stations = load_all_ecad_stations(ecad_zip)
     
     # Filter stations near Paris (try different radii)
-    paris_stations = filter_stations_near_paris(all_stations, radius_km=100)
+    paris_stations = filter_stations_near_paris(all_stations, radius_km=50)
     
-    if len(paris_stations) < 5:
-        logger.warning(f"Only {len(paris_stations)} stations found. Trying larger radius...")
-        paris_stations = filter_stations_near_paris(all_stations, radius_km=200)
+    # Always add known Paris stations for better coverage
+    logger.info("Adding known Paris stations...")
+    known_stations_data = [
+        {"STAID": 10001, "STANAME": "Paris Montsouris", "CN": "FR  ", "LAT_decimal": 48.8222, "LON_decimal": 2.3364, "HGHT": 75},
+        {"STAID": 10002, "STANAME": "Paris Orly", "CN": "FR  ", "LAT_decimal": 48.7233, "LON_decimal": 2.3794, "HGHT": 89},
+        {"STAID": 10003, "STANAME": "Paris Le Bourget", "CN": "FR  ", "LAT_decimal": 48.9694, "LON_decimal": 2.4414, "HGHT": 66},
+        {"STAID": 10004, "STANAME": "Paris Charles de Gaulle", "CN": "FR  ", "LAT_decimal": 49.0097, "LON_decimal": 2.5479, "HGHT": 109},
+        {"STAID": 10005, "STANAME": "Paris Vélizy", "CN": "FR  ", "LAT_decimal": 48.7811, "LON_decimal": 2.1931, "HGHT": 167},
+    ]
     
-    # If still not enough, add some known Paris stations manually
-    if len(paris_stations) < 3:
-        logger.info("Adding known Paris stations manually...")
-        known_stations = [
-            {"STAID": 1, "STANAME": "Paris Montsouris", "CN": "FR", "LAT_decimal": 48.8222, "LON_decimal": 2.3364, "HGHT": 75},
-            {"STAID": 2, "STANAME": "Paris Orly", "CN": "FR", "LAT_decimal": 48.7233, "LON_decimal": 2.3794, "HGHT": 89},
-            {"STAID": 3, "STANAME": "Paris Le Bourget", "CN": "FR", "LAT_decimal": 48.9694, "LON_decimal": 2.4414, "HGHT": 66},
-        ]
-        
-        known_gdf = gpd.GeoDataFrame(
-            known_stations,
-            geometry=gpd.points_from_xy(
-                [s["LON_decimal"] for s in known_stations],
-                [s["LAT_decimal"] for s in known_stations]
-            ),
-            crs="EPSG:4326"
-        )
-        
-        # Add columns to match existing structure
-        for col in ['STAID', 'STANAME', 'CN', 'LAT_decimal', 'LON_decimal', 'HGHT']:
-            if col not in known_gdf.columns:
-                known_gdf[col] = [s.get(col, 0) for s in known_stations]
-        
+    known_gdf = gpd.GeoDataFrame(
+        known_stations_data,
+        geometry=gpd.points_from_xy(
+            [s["LON_decimal"] for s in known_stations_data],
+            [s["LAT_decimal"] for s in known_stations_data]
+        ),
+        crs="EPSG:4326"
+    )
+    
+    # Combine with found stations
+    if len(paris_stations) > 0:
         paris_stations = pd.concat([paris_stations, known_gdf], ignore_index=True)
-        logger.info(f"Added {len(known_stations)} known stations. Total: {len(paris_stations)}")
+        logger.info(f"Added {len(known_stations_data)} known stations to {len(paris_stations) - len(known_stations_data)} found stations")
+    else:
+        paris_stations = known_gdf
+        logger.info(f"Using {len(known_stations_data)} known stations only")
+    
+    # Remove duplicates based on coordinates
+    paris_stations = paris_stations.drop_duplicates(subset=['LAT_decimal', 'LON_decimal'])
+    logger.info(f"Total unique stations: {len(paris_stations)}")
     
     # Save to GeoJSON
     output_dir.mkdir(parents=True, exist_ok=True)

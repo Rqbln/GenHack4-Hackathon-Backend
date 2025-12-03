@@ -11,152 +11,8 @@
     {
       "type": "Feature",
       "properties": {
-        "STAID": 32,
-        "STANAME": "Station 27",
-        "CN": "FR  ",
-        "HGHT": 161.0
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          2.3594444444444447,
-          47.05916666666666
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "STAID": 736,
-        "STANAME": "Station 423",
-        "CN": "FR  ",
-        "HGHT": 69.0
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          1.8338888888888891,
-          50.13583333333333
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "STAID": 737,
-        "STANAME": "Station 424",
-        "CN": "FR  ",
-        "HGHT": 47.0
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          3.0975,
-          50.57
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "STAID": 739,
-        "STANAME": "Station 426",
-        "CN": "FR  ",
-        "HGHT": 95.0
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          4.155277777777778,
-          49.20944444444445
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "STAID": 740,
-        "STANAME": "Station 427",
-        "CN": "FR  ",
-        "HGHT": 143.0
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          0.11027777777777778,
-          48.44555555555555
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "STAID": 745,
-        "STANAME": "Station 429",
-        "CN": "FR  ",
-        "HGHT": 219.0
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          5.088055555555555,
-          47.26777777777777
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "STAID": 2184,
-        "STANAME": "Station 1026",
-        "CN": "FR  ",
-        "HGHT": 151.0
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          1.1816666666666666,
-          49.38305555555556
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "STAID": 2190,
-        "STANAME": "Station 1027",
-        "CN": "FR  ",
-        "HGHT": 108.0
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          0.7269444444444445,
-          47.44416666666666
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "STAID": 11243,
-        "STANAME": "Station 4258",
-        "CN": "FR  ",
-        "HGHT": 112.0
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          4.019722222222222,
-          48.324444444444445
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
         "STAID": 11249,
-        "STANAME": "Station 4264",
+        "STANAME": "nan",
         "CN": "FR  ",
         "HGHT": 89.0
       },
@@ -165,6 +21,86 @@
         "coordinates": [
           2.3841666666666668,
           48.71666666666667
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "STAID": 10001,
+        "STANAME": "Paris Montsouris",
+        "CN": "FR  ",
+        "HGHT": 75.0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.3364,
+          48.8222
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "STAID": 10002,
+        "STANAME": "Paris Orly",
+        "CN": "FR  ",
+        "HGHT": 89.0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.3794,
+          48.7233
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "STAID": 10003,
+        "STANAME": "Paris Le Bourget",
+        "CN": "FR  ",
+        "HGHT": 66.0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.4414,
+          48.9694
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "STAID": 10004,
+        "STANAME": "Paris Charles de Gaulle",
+        "CN": "FR  ",
+        "HGHT": 109.0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.5479,
+          49.0097
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "STAID": 10005,
+        "STANAME": "Paris V\u00e9lizy",
+        "CN": "FR  ",
+        "HGHT": 167.0
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.1931,
+          48.7811
         ]
       }
     }

@@ -1,0 +1,4 @@
+# GenHack Climate API - Backend
+# This API uses only Python standard library
+# No external dependencies required
+

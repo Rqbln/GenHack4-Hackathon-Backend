@@ -1,193 +1,139 @@
-"""
-Vercel Serverless Function for GenHack API
-Adapted from api_simple.py for Vercel deployment
-
-Vercel Python functions use BaseHTTPRequestHandler, not AWS Lambda format
-"""
-
+from http.server import BaseHTTPRequestHandler
 import json
-from pathlib import Path
 import logging
+import os
+import traceback
+from pathlib import Path
 from urllib.parse import urlparse
 
+# Configuration minimale du logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load metrics from results file
-# In Vercel, files are in the deployment package
-BASE_DIR = Path(__file__).parent.parent
-METRICS_FILE = BASE_DIR / "results" / "all_metrics.json"
-STATIONS_FILE = BASE_DIR / "data" / "processed" / "stations.geojson"
-
-def load_metrics():
-    """Load metrics data from JSON file"""
-    if METRICS_FILE.exists():
-        try:
-            with open(METRICS_FILE, 'r') as f:
-                metrics = json.load(f)
-                logger.info("✅ Loaded real metrics from file")
-                return metrics
-        except Exception as e:
-            logger.error(f"Failed to load metrics: {e}")
-    
-    # Return mock data if file doesn't exist
-    logger.warning("Using mock metrics (real metrics file not found)")
-    return {
-        "baseline_metrics": {"rmse": 2.45, "mae": 1.89, "r2": 0.72},
-        "prithvi_metrics": {"rmse": 1.52, "mae": 1.15, "r2": 0.89},
-        "advanced_metrics": {
-            "perkins_score": 0.84,
-            "spectral_correlation": 0.91
-        },
-        "model_comparison": {
-            "rmse_improvement": {"absolute": 0.93, "percentage": 38.0}
-        },
-        "physics_validation": {
-            "overall": {"is_valid": True, "valid_count": 4, "total_count": 4}
-        }
-    }
-
-def load_stations():
-    """Load stations from GeoJSON file"""
-    if STATIONS_FILE.exists():
-        try:
-            with open(STATIONS_FILE, 'r') as f:
-                geojson = json.load(f)
-                stations = []
-                for feature in geojson.get('features', []):
-                    props = feature.get('properties', {})
-                    coords = feature.get('geometry', {}).get('coordinates', [])
-                    if len(coords) >= 2:
-                        stations.append({
-                            "staid": props.get('STAID', props.get('staid', 0)),
-                            "staname": props.get('STANAME', props.get('staname', 'Unknown')),
-                            "country": props.get('CN', props.get('country', 'FRA')),
-                            "latitude": coords[1],
-                            "longitude": coords[0],
-                            "elevation": props.get('HGHT', props.get('elevation', 0))
-                        })
-                logger.info(f"✅ Loaded {len(stations)} stations from file")
-                return {"stations": stations}
-        except Exception as e:
-            logger.error(f"Failed to load stations: {e}")
-    
-    # Return mock stations if file doesn't exist
-    logger.warning("Using mock stations (real stations file not found)")
-    return {
-        "stations": [
-            {
-                "staid": 1,
-                "staname": "Paris Montsouris",
-                "country": "FRA",
-                "latitude": 48.8222,
-                "longitude": 2.3364,
-                "elevation": 75
-            },
-            {
-                "staid": 2,
-                "staname": "Paris Orly",
-                "country": "FRA",
-                "latitude": 48.7233,
-                "longitude": 2.3794,
-                "elevation": 89
-            },
-            {
-                "staid": 3,
-                "staname": "Paris Le Bourget",
-                "country": "FRA",
-                "latitude": 48.9694,
-                "longitude": 2.4414,
-                "elevation": 66
-            }
-        ]
-    }
-
-# --- HANDLER VERCEL CORRIGÉ ---
-
 def handler(request):
     """
-    Vercel serverless function handler.
-    'request' est une instance de http.server.BaseHTTPRequestHandler
+    Handler Vercel robuste.
+    Capture toutes les erreurs pour éviter le crash 'Invocation Failed'.
     """
     
-    # Fonction utilitaire pour envoyer la réponse proprement
-    def send_json(status_code, data):
-        request.send_response(status_code)
-        # Headers CORS
+    # 1. Fonction interne pour envoyer la réponse
+    def send_response(status, data):
+        request.send_response(status)
         request.send_header('Access-Control-Allow-Origin', '*')
         request.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         request.send_header('Access-Control-Allow-Headers', 'Content-Type')
         request.send_header('Content-Type', 'application/json')
         request.end_headers()
-        # Écriture du corps de la réponse
-        request.wfile.write(json.dumps(data, indent=2).encode('utf-8'))
+        try:
+            request.wfile.write(json.dumps(data, indent=2).encode('utf-8'))
+        except Exception as write_error:
+            # Fallback critique si l'écriture échoue
+            print(f"Critical write error: {write_error}")
 
+    # 2. Bloc de sécurité global
     try:
-        # 1. Extraction propre de la méthode et du chemin
-        # Sur Vercel (BaseHTTPRequestHandler), la méthode est dans .command
-        method = request.command 
-        
-        # Le path peut contenir des query params (?id=1), on nettoie avec urlparse
-        parsed_url = urlparse(request.path)
-        path = parsed_url.path
+        # --- INITIALISATION LAZY (Pour éviter le crash au boot) ---
+        # On calcule les chemins ICI, pas en global
+        try:
+            # Si le fichier est dans api/index.py, parent.parent = racine
+            BASE_DIR = Path(__file__).parent.parent
+            METRICS_FILE = BASE_DIR / "results" / "all_metrics.json"
+            STATIONS_FILE = BASE_DIR / "data" / "processed" / "stations.geojson"
+        except Exception as e:
+            # Fallback si le système de fichier est différent
+            BASE_DIR = Path("/tmp")
+            METRICS_FILE = Path("/dev/null")
+            STATIONS_FILE = Path("/dev/null")
+            logger.warning(f"Path initialization warning: {e}")
 
-        # 2. Gestion OPTIONS (CORS Preflight)
-        if method == 'OPTIONS':
-            request.send_response(200)
-            request.send_header('Access-Control-Allow-Origin', '*')
-            request.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-            request.send_header('Access-Control-Allow-Headers', 'Content-Type')
-            request.end_headers()
-            return # On arrête là, pas de body pour OPTIONS
-
-        # 3. Routing
-        response_data = {}
-        status = 200
-
-        if path == '/' or path == '/health':
-            response_data = {"status": "healthy", "version": "1.0.0", "service": "chronos-wxc-api"}
-        
-        elif path == '/api/stations':
-            response_data = load_stations()
-        
-        elif path == '/api/metrics':
-            metrics = load_metrics()
-            response_data = {
-                "baseline_metrics": metrics.get("baseline_metrics", {}),
-                "prithvi_metrics": metrics.get("prithvi_metrics", {}),
-                "advanced_metrics": metrics.get("advanced_metrics", {}),
-                "data_info": metrics.get("data_info", {}),
-                "calculation_date": metrics.get("calculation_date", "")
+        # --- LOGIQUE HELPER ---
+        def load_metrics():
+            if METRICS_FILE.exists():
+                try:
+                    with open(METRICS_FILE, 'r') as f:
+                        return json.load(f)
+                except Exception:
+                    pass
+            # Mock Data
+            return {
+                "baseline_metrics": {"rmse": 2.45, "mae": 1.89, "r2": 0.72},
+                "prithvi_metrics": {"rmse": 1.52, "mae": 1.15, "r2": 0.89},
+                "model_comparison": {"rmse_improvement": {"absolute": 0.93, "percentage": 38.0}},
+                "data_info": {"status": "mock_data_loaded"}
             }
+
+        def load_stations():
+            if STATIONS_FILE.exists():
+                try:
+                    with open(STATIONS_FILE, 'r') as f:
+                        geojson = json.load(f)
+                        stations = []
+                        for feature in geojson.get('features', []):
+                            props = feature.get('properties', {})
+                            coords = feature.get('geometry', {}).get('coordinates', [])
+                            if len(coords) >= 2:
+                                stations.append({
+                                    "staid": props.get('STAID', props.get('staid', 0)),
+                                    "staname": props.get('STANAME', props.get('staname', 'Unknown')),
+                                    "country": props.get('CN', props.get('country', 'FRA')),
+                                    "latitude": coords[1],
+                                    "longitude": coords[0],
+                                    "elevation": props.get('HGHT', props.get('elevation', 0))
+                                })
+                        return {"stations": stations}
+                except Exception:
+                    pass
+            return {"stations": [{"staid": 1, "staname": "Mock Station Paris"}]}
+
+        # --- TRAITEMENT DE LA REQUÊTE ---
         
-        elif path == '/api/metrics/comparison':
+        # Gestion safe de la méthode HTTP
+        # request peut être un objet ou un dict selon le contexte de test/prod
+        method = getattr(request, 'command', 'GET')
+        raw_path = getattr(request, 'path', '/')
+        
+        # Parsing de l'URL
+        parsed_path = urlparse(raw_path).path
+
+        if method == 'OPTIONS':
+            send_response(200, {})
+            return
+
+        # Routing
+        response_data = {}
+        status_code = 200
+
+        if parsed_path == '/' or parsed_path == '/health':
+            response_data = {
+                "status": "healthy", 
+                "python_version": os.sys.version,
+                "base_dir": str(BASE_DIR)
+            }
+        elif '/api/stations' in parsed_path:
+            response_data = load_stations()
+        elif '/api/metrics/comparison' in parsed_path:
             metrics = load_metrics()
             baseline = metrics.get("baseline_metrics", {})
             prithvi = metrics.get("prithvi_metrics", {})
-            
+            # Calcul simple si données présentes
             if baseline.get("rmse") and prithvi.get("rmse"):
                 response_data = {
-                    "rmse_improvement": {
-                        "absolute": round(baseline["rmse"] - prithvi["rmse"], 2),
-                        "percentage": round((baseline["rmse"] - prithvi["rmse"]) / baseline["rmse"] * 100, 1)
-                    },
-                    "mae_improvement": {
-                        "absolute": round(baseline.get("mae", 0) - prithvi.get("mae", 0), 2),
-                        "percentage": round((baseline.get("mae", 0) - prithvi.get("mae", 0)) / baseline.get("mae", 1) * 100, 1) if baseline.get("mae") else 0
-                    }
+                   "rmse_improvement": {
+                       "absolute": round(baseline["rmse"] - prithvi["rmse"], 2),
+                       "percentage": round((baseline["rmse"] - prithvi["rmse"]) / baseline["rmse"] * 100, 1)
+                   }
                 }
             else:
                 response_data = metrics.get("model_comparison", {})
-        
-        elif path == '/api/metrics/advanced':
+        elif '/api/metrics/advanced' in parsed_path:
             metrics = load_metrics()
             response_data = metrics.get("advanced_metrics", {})
-        
-        elif path == '/api/validation/physics':
+        elif '/api/validation/physics' in parsed_path:
             metrics = load_metrics()
             response_data = metrics.get("physics_validation", {})
-        
-        elif path.startswith('/api/temperature'):
+        elif '/api/metrics' in parsed_path:
+            response_data = load_metrics()
+        elif '/api/temperature' in parsed_path:
             # Mock temperature data for now
             response_data = {
                 "data": [
@@ -196,15 +142,19 @@ def handler(request):
                     {"date": "2020-01-03", "temperature": 7.3, "quality": 0}
                 ]
             }
-        
         else:
-            response_data = {"error": f"Path not found: {path}"}
-            status = 404
+            status_code = 404
+            response_data = {"error": "Not Found", "path": parsed_path}
 
-        # 4. Envoi de la réponse finale
-        send_json(status, response_data)
+        send_response(status_code, response_data)
 
     except Exception as e:
-        logger.error(f"Error in handler: {e}", exc_info=True)
-        # En cas d'erreur fatale, on renvoie une 500 correctement formatée
-        send_json(500, {"error": str(e)})
+        # C'est ICI qu'on sauve l'invocation failed
+        # On capture l'erreur et on l'affiche au lieu de crasher la fonction
+        error_details = traceback.format_exc()
+        logger.error(f"Handler failed: {e}\n{error_details}")
+        send_response(500, {
+            "error": "Internal Server Error", 
+            "message": str(e),
+            "traceback": error_details.split('\n')
+        })

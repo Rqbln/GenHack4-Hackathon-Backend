@@ -106,7 +106,7 @@ def generate_realistic_temperature_data(station_id, latitude, longitude, elevati
         day_of_year = current_date.timetuple().tm_yday
         
         # Seasonal variation (sine wave with peak in summer)
-        seasonal_temp = 10.0 * math.sin((day_of_year - 80) * 2 * math.PI / 365.0)
+        seasonal_temp = 10.0 * math.sin((day_of_year - 80) * 2 * math.pi / 365.0)
         
         # Daily variation (small random component)
         daily_variation = math.sin(day_count * 0.1) * 2.0  # Slow variation
@@ -154,7 +154,7 @@ def generate_heatmap_data(date_str, bbox=None):
     
     # Day of year for seasonal variation
     day_of_year = date.timetuple().tm_yday
-    seasonal_base = 11.0 + 10.0 * math.sin((day_of_year - 80) * 2 * math.PI / 365.0)
+    seasonal_base = 11.0 + 10.0 * math.sin((day_of_year - 80) * 2 * math.pi / 365.0)
     
     # Generate grid of points
     n_points = 200  # More points for better heatmap

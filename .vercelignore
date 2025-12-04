@@ -1,32 +1,65 @@
 # Vercel ignore file
-venv/
+# Exclude large data files and unnecessary directories
+
+# Data directories (too large for Vercel)
+data/
+datasets/
+results/
+*.nc
+*.zarr
+*.tif
+*.tiff
+*.geotiff
+
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-*.so
-*.egg
-*.egg-info/
-dist/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# Build artifacts
 build/
+dist/
+*.egg-info/
+
+# Tests
 .pytest_cache/
 .coverage
 htmlcov/
-.env
-.env.local
-*.log
-.DS_Store
-node_modules/
-datasets/
-*.ipynb
-.git/
-.github/
+
+# Documentation (not needed for API)
 docs/
-infra/
-pipeline/
-scripts/
-tests/
 *.md
 !README.md
 
+# Infrastructure files (not needed for Vercel)
+infra/
+pipeline/
+.github/
+Makefile
+
+# Config files (not needed for Vercel)
+configs/
+schemas/
+
+# Scripts (not needed for Vercel)
+scripts/
+
+# Only keep what's needed for the API
+# api/
+# vercel.json
+# requirements.txt

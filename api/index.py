@@ -72,7 +72,35 @@ def load_stations():
                 return {"stations": stations}
         except Exception:
             pass
-    return {"stations": [{"staid": 1, "staname": "Mock Station Paris"}]}
+    # Mock stations with complete data
+    return {
+        "stations": [
+            {
+                "staid": 1,
+                "staname": "Paris Montsouris",
+                "country": "FRA",
+                "latitude": 48.8222,
+                "longitude": 2.3364,
+                "elevation": 75
+            },
+            {
+                "staid": 2,
+                "staname": "Paris Orly",
+                "country": "FRA",
+                "latitude": 48.7233,
+                "longitude": 2.3794,
+                "elevation": 89
+            },
+            {
+                "staid": 3,
+                "staname": "Paris Le Bourget",
+                "country": "FRA",
+                "latitude": 48.9694,
+                "longitude": 2.4414,
+                "elevation": 66
+            }
+        ]
+    }
 
 def generate_realistic_temperature_data(station_id, latitude, longitude, elevation, start_date_str, end_date_str):
     """

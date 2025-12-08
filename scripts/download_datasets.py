@@ -140,33 +140,66 @@ def download_folder_from_drive(folder_id: str, output_dir: Path, skip_existing: 
         
         # Utiliser download_folder avec toutes les options pour un téléchargement complet
         # gdown devrait normalement skip les fichiers existants, mais on force le comportement
-        try:
-            # Essayer d'abord avec use_cookies=True pour gérer l'authentification
-            gdown.download_folder(
-                url,
-                output=str(output_dir),
-                quiet=False,
-                use_cookies=True,  # Utiliser les cookies pour l'authentification
-                remaining_ok=True,  # Continue même si certains fichiers échouent
-                verify=False  # Pas de vérification SSL pour éviter les problèmes
-            )
-        except Exception as e1:
-            logger.warning(f"Tentative avec cookies échouée: {e1}")
-            logger.info("Tentative sans cookies...")
-            # Réessayer sans cookies
+        import time as time_module
+        
+        max_retries = 3
+        retry_delay = 5  # secondes
+        
+        for attempt in range(max_retries):
             try:
+                # Essayer d'abord avec use_cookies=True pour gérer l'authentification
+                logger.info(f"Tentative {attempt + 1}/{max_retries}...")
                 gdown.download_folder(
                     url,
                     output=str(output_dir),
                     quiet=False,
-                    use_cookies=False,
-                    remaining_ok=True,
-                    verify=False
+                    use_cookies=True,  # Utiliser les cookies pour l'authentification
+                    remaining_ok=True,  # Continue même si certains fichiers échouent
+                    verify=False  # Pas de vérification SSL pour éviter les problèmes
                 )
-            except Exception as e2:
-                # Si les deux méthodes échouent, essayer avec une approche différente
-                logger.warning(f"Tentative sans cookies échouée: {e2}")
-                raise e2
+                # Si on arrive ici, le téléchargement a réussi
+                break
+            except Exception as e1:
+                error_msg = str(e1)
+                # Vérifier si c'est une erreur de rate limiting ou de permissions
+                if "Cannot retrieve the public link" in error_msg or "many accesses" in error_msg:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Rate limiting détecté. Attente de {retry_delay} secondes avant de réessayer...")
+                        time_module.sleep(retry_delay)
+                        retry_delay *= 2  # Backoff exponentiel
+                        continue
+                    else:
+                        logger.warning(f"Tentative avec cookies échouée après {max_retries} tentatives: {e1}")
+                        logger.info("Tentative sans cookies...")
+                        # Réessayer sans cookies
+                        try:
+                            gdown.download_folder(
+                                url,
+                                output=str(output_dir),
+                                quiet=False,
+                                use_cookies=False,
+                                remaining_ok=True,
+                                verify=False
+                            )
+                            break
+                        except Exception as e2:
+                            logger.error(f"Tentative sans cookies échouée: {e2}")
+                            if attempt < max_retries - 1:
+                                logger.warning(f"Attente de {retry_delay} secondes avant de réessayer...")
+                                time_module.sleep(retry_delay)
+                                retry_delay *= 2
+                                continue
+                            else:
+                                raise e2
+                else:
+                    # Autre type d'erreur
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Erreur: {e1}. Réessai dans {retry_delay} secondes...")
+                        time_module.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        raise e1
         
         elapsed_time = time.time() - start_time
         

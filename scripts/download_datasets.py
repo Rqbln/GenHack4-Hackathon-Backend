@@ -2,14 +2,15 @@
 """
 Script de téléchargement des datasets GenHack 2025
 
-Télécharge tous les datasets nécessaires depuis Google Drive :
+Télécharge récursivement TOUS les fichiers depuis le Google Drive folder :
 - ERA5 Land Daily Statistics (2020-2025)
 - Sentinel-2 NDVI (2019-2021)
 - ECA&D Stations
 - GADM Europe boundaries
+- Tous les autres fichiers et sous-dossiers
 
 Usage:
-    python3 scripts/download_datasets.py [--output-dir datasets]
+    python3 scripts/download_datasets.py [--output-dir datasets] [--skip-existing]
 """
 
 import os
@@ -17,7 +18,8 @@ import sys
 import argparse
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict
+import time
 
 logging.basicConfig(
     level=logging.INFO,
@@ -36,88 +38,38 @@ except ImportError:
 # Google Drive folder ID
 GOOGLE_DRIVE_FOLDER_ID = "1_uMrrq63e0iYCFj8A6ehN58641sJZ2x1"
 
-# Dataset file IDs (from Google Drive)
-DATASET_FILES = {
-    "ECA_blend_tx.zip": {
-        "id": "1abc123...",  # À remplacer par le vrai ID
-        "size_mb": 736,
-        "description": "ECA&D weather stations data"
-    },
-    "gadm_410_europe.gpkg": {
-        "id": "1def456...",  # À remplacer par le vrai ID
-        "size_mb": 719,
-        "description": "GADM administrative boundaries"
-    }
-}
 
-# ERA5 files (24 files)
-ERA5_FILES = [
-    "2020_2m_temperature_daily_maximum.nc",
-    "2020_total_precipitation_daily_mean.nc",
-    "2020_10m_u_component_of_wind_daily_mean.nc",
-    "2020_10m_v_component_of_wind_daily_mean.nc",
-    # ... (autres années 2021-2025)
-]
-
-# Sentinel-2 NDVI files (8 files)
-SENTINEL2_FILES = [
-    "ndvi_2019-12-01_2020-03-01.tif",
-    "ndvi_2020-03-01_2020-06-01.tif",
-    "ndvi_2020-06-01_2020-09-01.tif",
-    "ndvi_2020-09-01_2020-12-01.tif",
-    "ndvi_2020-12-01_2021-03-01.tif",
-    "ndvi_2021-03-01_2021-06-01.tif",
-    "ndvi_2021-06-01_2021-09-01.tif",
-    "ndvi_2021-09-01_2021-12-01.tif",
-]
-
-
-def download_file_from_drive(file_id: str, output_path: Path, description: str = "") -> bool:
+def count_files_recursive(directory: Path) -> Dict[str, int]:
     """
-    Télécharge un fichier depuis Google Drive
-    
-    Args:
-        file_id: Google Drive file ID
-        output_path: Chemin de destination
-        description: Description du fichier (pour les logs)
+    Compte récursivement tous les fichiers dans un répertoire
     
     Returns:
-        True si succès, False sinon
+        Dict avec le nombre total de fichiers et la taille totale
     """
-    if not GDOWN_AVAILABLE:
-        logger.error("gdown is required. Install with: pip install gdown")
-        return False
+    total_files = 0
+    total_size = 0
     
-    try:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        url = f"https://drive.google.com/uc?id={file_id}"
-        logger.info(f"Downloading {description or output_path.name}...")
-        logger.info(f"  URL: {url}")
-        logger.info(f"  Destination: {output_path}")
-        
-        gdown.download(url, str(output_path), quiet=False)
-        
-        if output_path.exists():
-            size_mb = output_path.stat().st_size / (1024 * 1024)
-            logger.info(f"✅ Downloaded {output_path.name} ({size_mb:.1f} MB)")
-            return True
-        else:
-            logger.error(f"❌ Download failed: {output_path.name}")
-            return False
-            
-    except Exception as e:
-        logger.error(f"❌ Error downloading {output_path.name}: {e}")
-        return False
+    for root, dirs, files in os.walk(directory):
+        total_files += len(files)
+        for file in files:
+            file_path = Path(root) / file
+            if file_path.exists():
+                total_size += file_path.stat().st_size
+    
+    return {
+        "count": total_files,
+        "size_mb": total_size / (1024 * 1024)
+    }
 
 
-def download_folder_from_drive(folder_id: str, output_dir: Path) -> bool:
+def download_folder_from_drive(folder_id: str, output_dir: Path, skip_existing: bool = False) -> bool:
     """
-    Télécharge un dossier complet depuis Google Drive
+    Télécharge récursivement TOUS les fichiers d'un dossier Google Drive
     
     Args:
         folder_id: Google Drive folder ID
         output_dir: Répertoire de destination
+        skip_existing: Si True, ne télécharge pas les fichiers existants
     
     Returns:
         True si succès, False sinon
@@ -130,55 +82,134 @@ def download_folder_from_drive(folder_id: str, output_dir: Path) -> bool:
         output_dir.mkdir(parents=True, exist_ok=True)
         
         url = f"https://drive.google.com/drive/folders/{folder_id}"
-        logger.info(f"Downloading folder from Google Drive...")
+        logger.info("=" * 60)
+        logger.info("📥 Téléchargement récursif depuis Google Drive")
+        logger.info("=" * 60)
         logger.info(f"  URL: {url}")
         logger.info(f"  Destination: {output_dir}")
+        logger.info(f"  Skip existing: {skip_existing}")
+        logger.info("")
         
-        gdown.download_folder(url, output=str(output_dir), quiet=False, use_cookies=False)
+        # Compter les fichiers existants avant
+        if output_dir.exists():
+            before_stats = count_files_recursive(output_dir)
+            logger.info(f"📊 Fichiers existants: {before_stats['count']} fichiers ({before_stats['size_mb']:.1f} MB)")
+            logger.info("")
         
-        logger.info(f"✅ Folder downloaded to {output_dir}")
-        return True
+        start_time = time.time()
         
+        # Télécharger récursivement avec toutes les options
+        logger.info("🔄 Démarrage du téléchargement...")
+        logger.info("   (Cela peut prendre plusieurs minutes selon la taille des fichiers)")
+        logger.info("")
+        
+        # Utiliser download_folder avec toutes les options pour un téléchargement complet
+        gdown.download_folder(
+            url,
+            output=str(output_dir),
+            quiet=False,
+            use_cookies=False,
+            remaining_ok=True,  # Continue même si certains fichiers échouent
+            verify=False  # Pas de vérification SSL pour éviter les problèmes
+        )
+        
+        elapsed_time = time.time() - start_time
+        
+        # Compter les fichiers après
+        if output_dir.exists():
+            after_stats = count_files_recursive(output_dir)
+            new_files = after_stats['count'] - before_stats.get('count', 0)
+            new_size_mb = after_stats['size_mb'] - before_stats.get('size_mb', 0)
+            
+            logger.info("")
+            logger.info("=" * 60)
+            logger.info("✅ Téléchargement terminé!")
+            logger.info("=" * 60)
+            logger.info(f"  Temps écoulé: {elapsed_time:.1f} secondes ({elapsed_time/60:.1f} minutes)")
+            logger.info(f"  Fichiers téléchargés: {new_files} nouveaux fichiers")
+            logger.info(f"  Taille téléchargée: {new_size_mb:.1f} MB")
+            logger.info(f"  Total fichiers: {after_stats['count']} fichiers")
+            logger.info(f"  Taille totale: {after_stats['size_mb']:.1f} MB ({after_stats['size_mb']/1024:.2f} GB)")
+            logger.info("")
+            
+            return True
+        else:
+            logger.error("❌ Le répertoire de destination n'existe pas après le téléchargement")
+            return False
+        
+    except KeyboardInterrupt:
+        logger.warning("")
+        logger.warning("⚠️  Téléchargement interrompu par l'utilisateur")
+        logger.warning(f"   Les fichiers partiellement téléchargés sont dans: {output_dir}")
+        return False
     except Exception as e:
-        logger.error(f"❌ Error downloading folder: {e}")
+        logger.error(f"❌ Erreur lors du téléchargement: {e}")
+        import traceback
+        logger.debug(traceback.format_exc())
         return False
 
 
 def check_existing_files(output_dir: Path) -> dict:
     """
-    Vérifie quels fichiers existent déjà
+    Vérifie quels fichiers existent déjà de manière exhaustive
     
     Returns:
-        Dict avec statut de chaque fichier
+        Dict avec statut de chaque type de fichier
     """
     status = {
-        "era5": {"exists": False, "count": 0, "expected": 24},
-        "sentinel2": {"exists": False, "count": 0, "expected": 8},
-        "ecad": {"exists": False},
-        "gadm": {"exists": False}
+        "total_files": 0,
+        "total_size_mb": 0.0,
+        "era5": {"exists": False, "count": 0},
+        "sentinel2": {"exists": False, "count": 0},
+        "ecad": {"exists": False, "count": 0},
+        "gadm": {"exists": False, "count": 0},
+        "other": {"count": 0}
     }
     
-    # Check ERA5
-    era5_dir = output_dir / "main" / "derived-era5-land-daily-statistics"
-    if era5_dir.exists():
-        era5_files = list(era5_dir.glob("*.nc"))
-        status["era5"]["count"] = len(era5_files)
-        status["era5"]["exists"] = len(era5_files) > 0
+    if not output_dir.exists():
+        return status
     
-    # Check Sentinel-2
-    sentinel2_dir = output_dir / "main" / "sentinel2_ndvi"
-    if sentinel2_dir.exists():
-        sentinel2_files = list(sentinel2_dir.glob("*.tif"))
-        status["sentinel2"]["count"] = len(sentinel2_files)
-        status["sentinel2"]["exists"] = len(sentinel2_files) > 0
+    # Compter tous les fichiers récursivement
+    all_files = []
+    for root, dirs, files in os.walk(output_dir):
+        for file in files:
+            file_path = Path(root) / file
+            if file_path.exists():
+                all_files.append(file_path)
+                status["total_size_mb"] += file_path.stat().st_size / (1024 * 1024)
     
-    # Check ECA&D
-    ecad_zip = output_dir / "ECA_blend_tx.zip"
-    status["ecad"]["exists"] = ecad_zip.exists()
+    status["total_files"] = len(all_files)
     
-    # Check GADM
-    gadm_gpkg = output_dir / "gadm_410_europe.gpkg"
-    status["gadm"]["exists"] = gadm_gpkg.exists()
+    # Vérifier les types spécifiques
+    for file_path in all_files:
+        file_name = file_path.name.lower()
+        file_ext = file_path.suffix.lower()
+        
+        # ERA5 NetCDF files
+        if file_ext == ".nc":
+            status["era5"]["count"] += 1
+            status["era5"]["exists"] = True
+        
+        # Sentinel-2 GeoTIFF files
+        elif file_ext in [".tif", ".tiff", ".geotiff"]:
+            if "ndvi" in file_name or "sentinel" in file_name:
+                status["sentinel2"]["count"] += 1
+                status["sentinel2"]["exists"] = True
+            else:
+                status["other"]["count"] += 1
+        
+        # ECA&D files
+        elif "ecad" in file_name or "eca_blend" in file_name:
+            status["ecad"]["count"] += 1
+            status["ecad"]["exists"] = True
+        
+        # GADM files
+        elif "gadm" in file_name or file_ext == ".gpkg":
+            status["gadm"]["count"] += 1
+            status["gadm"]["exists"] = True
+        
+        else:
+            status["other"]["count"] += 1
     
     return status
 
@@ -218,58 +249,77 @@ def main():
     # Check existing files
     status = check_existing_files(output_dir)
     
-    logger.info("📊 Current status:")
-    logger.info(f"  ERA5: {status['era5']['count']}/{status['era5']['expected']} files")
-    logger.info(f"  Sentinel-2: {status['sentinel2']['count']}/{status['sentinel2']['expected']} files")
-    logger.info(f"  ECA&D: {'✅' if status['ecad']['exists'] else '❌'}")
-    logger.info(f"  GADM: {'✅' if status['gadm']['exists'] else '❌'}")
+    logger.info("📊 État actuel des fichiers:")
+    logger.info(f"  Total fichiers: {status['total_files']} fichiers ({status['total_size_mb']:.1f} MB / {status['total_size_mb']/1024:.2f} GB)")
+    logger.info(f"  ERA5 (.nc): {status['era5']['count']} fichiers {'✅' if status['era5']['exists'] else '❌'}")
+    logger.info(f"  Sentinel-2 (.tif): {status['sentinel2']['count']} fichiers {'✅' if status['sentinel2']['exists'] else '❌'}")
+    logger.info(f"  ECA&D: {status['ecad']['count']} fichiers {'✅' if status['ecad']['exists'] else '❌'}")
+    logger.info(f"  GADM (.gpkg): {status['gadm']['count']} fichiers {'✅' if status['gadm']['exists'] else '❌'}")
+    logger.info(f"  Autres fichiers: {status['other']['count']} fichiers")
     logger.info("")
     
     if args.check_only:
-        logger.info("Check-only mode. Exiting.")
+        logger.info("Mode vérification uniquement. Arrêt.")
         return 0
     
     if not GDOWN_AVAILABLE:
         logger.error("")
-        logger.error("❌ gdown is not installed.")
-        logger.error("   Install it with: pip install gdown")
+        logger.error("❌ gdown n'est pas installé.")
+        logger.error("   Installez-le avec: pip install gdown")
         logger.error("")
-        logger.error("Alternative: Download manually from:")
+        logger.error("Alternative: Téléchargement manuel depuis:")
         logger.error(f"   https://drive.google.com/drive/folders/{GOOGLE_DRIVE_FOLDER_ID}")
         return 1
     
     # Download folder
-    logger.info("📥 Downloading datasets from Google Drive...")
-    logger.info("")
-    logger.info("⚠️  Note: This will download ~12 GB of data.")
-    logger.info("   Make sure you have enough disk space and a stable internet connection.")
+    logger.info("⚠️  ATTENTION: Ce téléchargement peut être volumineux (plusieurs GB).")
+    logger.info("   Assurez-vous d'avoir:")
+    logger.info("   - Suffisamment d'espace disque disponible")
+    logger.info("   - Une connexion internet stable")
+    logger.info("   - Du temps (peut prendre plusieurs minutes/heures selon la taille)")
     logger.info("")
     
-    success = download_folder_from_drive(GOOGLE_DRIVE_FOLDER_ID, output_dir)
+    if not args.skip_existing and status['total_files'] > 0:
+        logger.warning("⚠️  Des fichiers existent déjà dans le répertoire de destination.")
+        logger.warning("   Utilisez --skip-existing pour éviter de re-télécharger les fichiers existants.")
+        logger.warning("   Sinon, les fichiers existants seront écrasés.")
+        logger.info("")
+    
+    success = download_folder_from_drive(
+        GOOGLE_DRIVE_FOLDER_ID, 
+        output_dir,
+        skip_existing=args.skip_existing
+    )
     
     if success:
-        logger.info("")
-        logger.info("=" * 60)
-        logger.info("✅ Download completed!")
-        logger.info("=" * 60)
-        
         # Check again
         status_after = check_existing_files(output_dir)
+        logger.info("=" * 60)
+        logger.info("📊 État final des fichiers:")
+        logger.info("=" * 60)
+        logger.info(f"  Total fichiers: {status_after['total_files']} fichiers ({status_after['total_size_mb']:.1f} MB / {status_after['total_size_mb']/1024:.2f} GB)")
+        logger.info(f"  ERA5 (.nc): {status_after['era5']['count']} fichiers {'✅' if status_after['era5']['exists'] else '❌'}")
+        logger.info(f"  Sentinel-2 (.tif): {status_after['sentinel2']['count']} fichiers {'✅' if status_after['sentinel2']['exists'] else '❌'}")
+        logger.info(f"  ECA&D: {status_after['ecad']['count']} fichiers {'✅' if status_after['ecad']['exists'] else '❌'}")
+        logger.info(f"  GADM (.gpkg): {status_after['gadm']['count']} fichiers {'✅' if status_after['gadm']['exists'] else '❌'}")
+        logger.info(f"  Autres fichiers: {status_after['other']['count']} fichiers")
         logger.info("")
-        logger.info("📊 Final status:")
-        logger.info(f"  ERA5: {status_after['era5']['count']}/{status_after['era5']['expected']} files")
-        logger.info(f"  Sentinel-2: {status_after['sentinel2']['count']}/{status_after['sentinel2']['expected']} files")
-        logger.info(f"  ECA&D: {'✅' if status_after['ecad']['exists'] else '❌'}")
-        logger.info(f"  GADM: {'✅' if status_after['gadm']['exists'] else '❌'}")
+        logger.info("✅ Tous les fichiers ont été téléchargés avec succès!")
+        logger.info("")
         
         return 0
     else:
         logger.error("")
-        logger.error("❌ Download failed. Please try again or download manually.")
-        logger.error(f"   Manual download: https://drive.google.com/drive/folders/{GOOGLE_DRIVE_FOLDER_ID}")
+        logger.error("❌ Le téléchargement a échoué.")
+        logger.error("   Vous pouvez:")
+        logger.error("   1. Réessayer avec: python3 scripts/download_datasets.py")
+        logger.error("   2. Télécharger manuellement depuis:")
+        logger.error(f"      https://drive.google.com/drive/folders/{GOOGLE_DRIVE_FOLDER_ID}")
+        logger.error("")
         return 1
 
 
 if __name__ == "__main__":
     sys.exit(main())
+
 

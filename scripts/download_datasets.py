@@ -42,6 +42,7 @@ GOOGLE_DRIVE_FOLDER_ID = "1_uMrrq63e0iYCFj8A6ehN58641sJZ2x1"
 def count_files_recursive(directory: Path) -> Dict[str, int]:
     """
     Compte récursivement tous les fichiers dans un répertoire
+    Ignore les fichiers partiels (.part) et les fichiers temporaires
     
     Returns:
         Dict avec le nombre total de fichiers et la taille totale
@@ -50,10 +51,14 @@ def count_files_recursive(directory: Path) -> Dict[str, int]:
     total_size = 0
     
     for root, dirs, files in os.walk(directory):
-        total_files += len(files)
         for file in files:
+            # Ignorer les fichiers partiels et temporaires
+            if file.endswith('.part') or file.startswith('.') or file.endswith('.tmp'):
+                continue
+                
             file_path = Path(root) / file
-            if file_path.exists():
+            if file_path.exists() and file_path.is_file():
+                total_files += 1
                 total_size += file_path.stat().st_size
     
     return {
@@ -65,6 +70,7 @@ def count_files_recursive(directory: Path) -> Dict[str, int]:
 def get_existing_files_set(directory: Path) -> set:
     """
     Retourne un set de tous les chemins de fichiers existants (relatifs au répertoire)
+    Ignore les fichiers partiels (.part) et les fichiers temporaires
     
     Returns:
         Set de chemins relatifs des fichiers existants
@@ -76,8 +82,12 @@ def get_existing_files_set(directory: Path) -> set:
     for root, dirs, files in os.walk(directory):
         root_path = Path(root)
         for file in files:
+            # Ignorer les fichiers partiels et temporaires
+            if file.endswith('.part') or file.startswith('.') or file.endswith('.tmp'):
+                continue
+                
             file_path = root_path / file
-            if file_path.exists():
+            if file_path.exists() and file_path.is_file():
                 # Chemin relatif au répertoire de base
                 try:
                     rel_path = file_path.relative_to(directory)
@@ -283,8 +293,12 @@ def check_existing_files(output_dir: Path) -> dict:
     all_files = []
     for root, dirs, files in os.walk(output_dir):
         for file in files:
+            # Ignorer les fichiers partiels et temporaires
+            if file.endswith('.part') or file.startswith('.') or file.endswith('.tmp'):
+                continue
+                
             file_path = Path(root) / file
-            if file_path.exists():
+            if file_path.exists() and file_path.is_file():
                 all_files.append(file_path)
                 status["total_size_mb"] += file_path.stat().st_size / (1024 * 1024)
     
@@ -324,6 +338,30 @@ def check_existing_files(output_dir: Path) -> dict:
     return status
 
 
+def clean_partial_files(output_dir: Path) -> int:
+    """
+    Nettoie les fichiers partiels (.part) laissés par des téléchargements interrompus
+    
+    Returns:
+        Nombre de fichiers .part supprimés
+    """
+    part_files = []
+    if output_dir.exists():
+        for root, dirs, files in os.walk(output_dir):
+            for file in files:
+                if file.endswith('.part'):
+                    part_files.append(Path(root) / file)
+    
+    for part_file in part_files:
+        try:
+            part_file.unlink()
+            logger.info(f"🗑️  Supprimé fichier partiel: {part_file.name}")
+        except Exception as e:
+            logger.warning(f"⚠️  Impossible de supprimer {part_file}: {e}")
+    
+    return len(part_files)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Download GenHack 2025 datasets from Google Drive"
@@ -344,6 +382,11 @@ def main():
         action="store_true",
         help="Only check which files exist, don't download"
     )
+    parser.add_argument(
+        "--clean-partial",
+        action="store_true",
+        help="Clean up partial (.part) files before downloading"
+    )
     
     args = parser.parse_args()
     
@@ -355,6 +398,16 @@ def main():
     logger.info("=" * 60)
     logger.info(f"Output directory: {output_dir}")
     logger.info("")
+    
+    # Clean partial files if requested
+    if args.clean_partial:
+        logger.info("🧹 Nettoyage des fichiers partiels...")
+        cleaned = clean_partial_files(output_dir)
+        if cleaned > 0:
+            logger.info(f"   {cleaned} fichier(s) partiel(s) supprimé(s)")
+        else:
+            logger.info("   Aucun fichier partiel trouvé")
+        logger.info("")
     
     # Check existing files
     status = check_existing_files(output_dir)

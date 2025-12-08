@@ -62,6 +62,33 @@ def count_files_recursive(directory: Path) -> Dict[str, int]:
     }
 
 
+def get_existing_files_set(directory: Path) -> set:
+    """
+    Retourne un set de tous les chemins de fichiers existants (relatifs au répertoire)
+    
+    Returns:
+        Set de chemins relatifs des fichiers existants
+    """
+    existing = set()
+    if not directory.exists():
+        return existing
+    
+    for root, dirs, files in os.walk(directory):
+        root_path = Path(root)
+        for file in files:
+            file_path = root_path / file
+            if file_path.exists():
+                # Chemin relatif au répertoire de base
+                try:
+                    rel_path = file_path.relative_to(directory)
+                    existing.add(str(rel_path))
+                except ValueError:
+                    # Si le fichier n'est pas dans le répertoire (ne devrait pas arriver)
+                    pass
+    
+    return existing
+
+
 def download_folder_from_drive(folder_id: str, output_dir: Path, skip_existing: bool = False) -> bool:
     """
     Télécharge récursivement TOUS les fichiers d'un dossier Google Drive
@@ -91,9 +118,15 @@ def download_folder_from_drive(folder_id: str, output_dir: Path, skip_existing: 
         logger.info("")
         
         # Compter les fichiers existants avant
+        before_stats = {"count": 0, "size_mb": 0.0}
+        existing_files = set()
+        
         if output_dir.exists():
             before_stats = count_files_recursive(output_dir)
+            existing_files = get_existing_files_set(output_dir)
             logger.info(f"📊 Fichiers existants: {before_stats['count']} fichiers ({before_stats['size_mb']:.1f} MB)")
+            if skip_existing and before_stats['count'] > 0:
+                logger.info(f"   Mode skip-existing activé: les fichiers existants seront ignorés")
             logger.info("")
         
         start_time = time.time()
@@ -101,35 +134,79 @@ def download_folder_from_drive(folder_id: str, output_dir: Path, skip_existing: 
         # Télécharger récursivement avec toutes les options
         logger.info("🔄 Démarrage du téléchargement...")
         logger.info("   (Cela peut prendre plusieurs minutes selon la taille des fichiers)")
+        if skip_existing and before_stats['count'] > 0:
+            logger.info("   Seuls les fichiers manquants seront téléchargés")
         logger.info("")
         
         # Utiliser download_folder avec toutes les options pour un téléchargement complet
-        gdown.download_folder(
-            url,
-            output=str(output_dir),
-            quiet=False,
-            use_cookies=False,
-            remaining_ok=True,  # Continue même si certains fichiers échouent
-            verify=False  # Pas de vérification SSL pour éviter les problèmes
-        )
+        # gdown devrait normalement skip les fichiers existants, mais on force le comportement
+        try:
+            # Essayer d'abord avec use_cookies=True pour gérer l'authentification
+            gdown.download_folder(
+                url,
+                output=str(output_dir),
+                quiet=False,
+                use_cookies=True,  # Utiliser les cookies pour l'authentification
+                remaining_ok=True,  # Continue même si certains fichiers échouent
+                verify=False  # Pas de vérification SSL pour éviter les problèmes
+            )
+        except Exception as e1:
+            logger.warning(f"Tentative avec cookies échouée: {e1}")
+            logger.info("Tentative sans cookies...")
+            # Réessayer sans cookies
+            try:
+                gdown.download_folder(
+                    url,
+                    output=str(output_dir),
+                    quiet=False,
+                    use_cookies=False,
+                    remaining_ok=True,
+                    verify=False
+                )
+            except Exception as e2:
+                # Si les deux méthodes échouent, essayer avec une approche différente
+                logger.warning(f"Tentative sans cookies échouée: {e2}")
+                raise e2
         
         elapsed_time = time.time() - start_time
         
         # Compter les fichiers après
         if output_dir.exists():
             after_stats = count_files_recursive(output_dir)
-            new_files = after_stats['count'] - before_stats.get('count', 0)
-            new_size_mb = after_stats['size_mb'] - before_stats.get('size_mb', 0)
+            after_files = get_existing_files_set(output_dir)
+            
+            # Calculer les nouveaux fichiers (ceux qui n'existaient pas avant)
+            new_files_set = after_files - existing_files
+            new_files_count = len(new_files_set)
+            
+            # Calculer la taille des nouveaux fichiers
+            new_size_mb = 0.0
+            for rel_path in new_files_set:
+                file_path = output_dir / rel_path
+                if file_path.exists():
+                    new_size_mb += file_path.stat().st_size / (1024 * 1024)
             
             logger.info("")
             logger.info("=" * 60)
             logger.info("✅ Téléchargement terminé!")
             logger.info("=" * 60)
             logger.info(f"  Temps écoulé: {elapsed_time:.1f} secondes ({elapsed_time/60:.1f} minutes)")
-            logger.info(f"  Fichiers téléchargés: {new_files} nouveaux fichiers")
-            logger.info(f"  Taille téléchargée: {new_size_mb:.1f} MB")
+            
+            if skip_existing and before_stats['count'] > 0:
+                logger.info(f"  Fichiers déjà présents: {before_stats['count']} fichiers (ignorés)")
+                logger.info(f"  Nouveaux fichiers téléchargés: {new_files_count} fichiers")
+                logger.info(f"  Taille téléchargée: {new_size_mb:.1f} MB")
+            else:
+                logger.info(f"  Fichiers téléchargés: {new_files_count} nouveaux fichiers")
+                logger.info(f"  Taille téléchargée: {new_size_mb:.1f} MB")
+            
             logger.info(f"  Total fichiers: {after_stats['count']} fichiers")
             logger.info(f"  Taille totale: {after_stats['size_mb']:.1f} MB ({after_stats['size_mb']/1024:.2f} GB)")
+            
+            if new_files_count == 0 and before_stats['count'] > 0:
+                logger.info("")
+                logger.info("ℹ️  Tous les fichiers étaient déjà présents. Aucun nouveau téléchargement.")
+            
             logger.info("")
             
             return True
@@ -279,11 +356,15 @@ def main():
     logger.info("   - Du temps (peut prendre plusieurs minutes/heures selon la taille)")
     logger.info("")
     
-    if not args.skip_existing and status['total_files'] > 0:
-        logger.warning("⚠️  Des fichiers existent déjà dans le répertoire de destination.")
-        logger.warning("   Utilisez --skip-existing pour éviter de re-télécharger les fichiers existants.")
-        logger.warning("   Sinon, les fichiers existants seront écrasés.")
+    # Par défaut, on active skip-existing si des fichiers existent déjà
+    # Cela évite de re-télécharger inutilement
+    if status['total_files'] > 0 and not args.skip_existing:
+        logger.info("ℹ️  Des fichiers existent déjà dans le répertoire de destination.")
+        logger.info("   Le script téléchargera uniquement les fichiers manquants.")
+        logger.info("   (gdown skip automatiquement les fichiers existants)")
         logger.info("")
+        # On active skip-existing par défaut pour être explicite
+        args.skip_existing = True
     
     success = download_folder_from_drive(
         GOOGLE_DRIVE_FOLDER_ID, 

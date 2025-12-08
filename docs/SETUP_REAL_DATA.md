@@ -214,3 +214,4 @@ boundary = gpd.read_file("data/processed/city_boundary.geojson")
 
 **Dernière mise à jour** : 18 Décembre 2025
 
+

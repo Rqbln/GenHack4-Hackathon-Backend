@@ -64,3 +64,4 @@ python3 scripts/run_etl_simple.py
 **Date de génération** : 18 Décembre 2025  
 **Script utilisé** : `scripts/run_etl_simple.py`
 
+

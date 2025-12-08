@@ -18,3 +18,4 @@ fi
 echo "🚀 Exécution de l'ETL avec les vraies données..."
 python3 scripts/run_etl_real_data.py
 
+

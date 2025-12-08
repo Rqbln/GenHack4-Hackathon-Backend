@@ -46,6 +46,7 @@ htmlcov/
 
 # Data (local testing)
 /tmp/
+datasets/
 *.tif
 *.tiff
 *.geotiff

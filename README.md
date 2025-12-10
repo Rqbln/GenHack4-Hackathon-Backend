@@ -77,6 +77,7 @@ GenHack4-Hackathon-Vertex/
 │   ├── ROADMAP_TODOS.md
 │   ├── TESTING_PLAN.md
 │   └── ...
+├── genhack/               # Méthode complète de downscaling (code + docs)
 └── datasets/              # Datasets bruts (à télécharger)
 ```
 
@@ -110,6 +111,7 @@ L'API simple expose les endpoints suivants :
 
 ## 📚 Documentation
 
+- **Méthodologie downscaling (résiduel)** : `docs/GENHACK_METHOD.md` (résumé) et dossier `Genhack/` (détails, code, résultats)
 - **Rapport Principal** : `docs/GenHack2025_Report.md`
 - **Roadmap** : `docs/ROADMAP_TODOS.md`
 - **Tâches Restantes** : `docs/REMAINING_TASKS.md`

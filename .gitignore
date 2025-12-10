@@ -46,13 +46,14 @@ htmlcov/
 
 # Data (local testing)
 /tmp/
-datasets/
 *.tif
 *.tiff
 *.geotiff
 *.nc
 *.zarr
 *.hdf5
+genhack/outputs/
+genhack/datasets/
 
 # Logs
 *.log

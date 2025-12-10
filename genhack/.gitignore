@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# Data files (large)
+datasets/main/ECA_blend_tx/*.txt
+datasets/main/derived-era5-land-daily-statistics/*.nc
+datasets/main/sentinel2_ndvi/*.tif
+*.nc
+*.tif
+*.gpkg
+
+# Output files
+outputs/
+*.pkl
+*.csv
+*.png
+*.jpg
+*.gif
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# Cache
+.cache/
+*.cache

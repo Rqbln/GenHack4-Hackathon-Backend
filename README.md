@@ -1,6 +1,6 @@
-# GenHack 2025 - Chronos-WxC Backend
+# GenHack 2025 – Chronos-WxC Backend API
 
-**Modèles de Fondation Climatiques pour le Downscaling Urbain**
+Backend serverless pour la production et la diffusion d’indicateurs climatiques downscalés (stations, séries temporelles, heatmaps) consommés par le dashboard React.
 
 ---
 
@@ -21,7 +21,7 @@ source venv/bin/activate  # Sur Windows: venv\Scripts\activate
 pip install -r requirements-api.txt
 ```
 
-### 2. Télécharger les Datasets
+### 2. Télécharger les datasets
 
 ```bash
 # Installer gdown pour télécharger depuis Google Drive
@@ -36,14 +36,14 @@ python3 scripts/download_datasets.py --check-only
 
 **Note** : Les datasets sont également disponibles manuellement sur [Google Drive](https://drive.google.com/drive/folders/1_uMrrq63e0iYCFj8A6ehN58641sJZ2x1)
 
-### 3. Exécuter l'ETL
+### 3. Exécuter l'ETL (optionnel pour dev local)
 
 ```bash
 # Exécuter le pipeline ETL avec les vraies données
 python3 scripts/run_etl_simple.py
 ```
 
-### 4. Lancer l'API
+### 4. Lancer l'API (dev)
 
 ```bash
 # Lancer l'API simple (port 8000)
@@ -52,72 +52,45 @@ python3 src/api_simple.py
 
 ---
 
-## 📁 Structure du Projet
+## 📁 Structure du projet
 
 ```
 GenHack4-Hackathon-Vertex/
-├── src/                    # Code source principal
-│   ├── etl.py             # Pipeline ETL complet
-│   ├── etl_simple.py      # Pipeline ETL simplifié
-│   ├── api_simple.py      # API HTTP simple
-│   ├── baseline.py        # Modèle baseline
-│   ├── finetuning.py      # Fine-tuning Prithvi WxC
-│   └── ...
-├── scripts/                # Scripts utilitaires
-│   ├── download_datasets.py    # Téléchargement datasets
-│   ├── run_etl_simple.py       # Exécution ETL
-│   ├── calculate_real_baseline_metrics.py
-│   └── ...
-├── data/                   # Données
-│   └── processed/         # Données traitées par l'ETL
-├── results/               # Résultats et métriques
-├── docs/                  # Documentation
-│   ├── GenHack2025_Report.md
-│   ├── REMAINING_TASKS.md
-│   ├── ROADMAP_TODOS.md
-│   ├── TESTING_PLAN.md
-│   └── ...
-├── genhack/               # Méthode complète de downscaling (code + docs)
-└── datasets/              # Datasets bruts (à télécharger)
+├── api/                  # Fonctions serverless Vercel (handler Python)
+├── src/                  # ETL, baseline, fine-tuning
+├── scripts/              # Utilitaires (download, ETL, métriques)
+├── genhack/              # Méthode complète de downscaling (code + docs)
+├── docs/                 # Documentation (méthodo, déploiement, tests)
+├── results/              # Métriques et sorties modèle
+└── datasets/             # Jeux de données bruts (ignorés)
 ```
 
 ---
 
 ## 📊 Datasets
-
-Les datasets sont téléchargés dans `datasets/` :
-
-- **ERA5 Land Daily Statistics** : Données climatiques (2020-2025)
-- **Sentinel-2 NDVI** : Indices de végétation (2019-2021)
-- **ECA&D Stations** : Observations météo au sol
-- **GADM Europe** : Limites administratives
-
-Voir `docs/DATASETS_ANALYSIS.md` et `docs/QUICK_START.md` pour plus de détails.
+- **ERA5-Land** (NetCDF, 2020-2025)  
+- **Sentinel-2 NDVI** (GeoTIFF, 2019-2023)  
+- **ECA&D** (stations, TX max quotidiennes)  
+- **GADM** (limites administratives)  
+→ voir `docs/DATASETS_ANALYSIS.md` et `docs/QUICK_START.md`.
 
 ---
 
-## 🔧 API Endpoints
-
-L'API simple expose les endpoints suivants :
-
-- `GET /health` - Health check
-- `GET /api/metrics` - Métriques baseline et Prithvi
-- `GET /api/stations` - Stations météo
-- `GET /api/metrics/comparison` - Comparaison baseline vs Prithvi
-- `GET /api/metrics/advanced` - Métriques avancées
-- `GET /api/validation/physics` - Validation physique
+## 🔧 API (serverless)
+- `GET /health` — Health check  
+- `GET /api/stations` — Stations météo (GeoJSON simplifié)  
+- `GET /api/temperature?station_id=&start_date=&end_date=` — Série temporelle réaliste (génération ou données)  
+- `GET /api/heatmap?date=&bbox=` — Heatmap synthétique réaliste (effet UHI, saisonnalité)  
+- `GET /api/metrics` — Métriques (baseline vs modèle)  
 
 ---
 
 ## 📚 Documentation
-
-- **Méthodologie downscaling (résiduel)** : `docs/GENHACK_METHOD.md` (résumé) et dossier `Genhack/` (détails, code, résultats)
-- **Rapport Principal** : `docs/GenHack2025_Report.md`
-- **Roadmap** : `docs/ROADMAP_TODOS.md`
-- **Tâches Restantes** : `docs/REMAINING_TASKS.md`
-- **Plan de Test** : `docs/TESTING_PLAN.md`
-- **Guide Déploiement** : `docs/DEPLOYMENT_GUIDE.md`
-- **Statut Données Réelles** : `docs/STATUS_REAL_DATA.md`
+- Méthode downscaling (résumé): `docs/GENHACK_METHOD.md`
+- Détails complets: dossier `genhack/` (`TECHNICAL_METHODOLOGY`, `RESULTS_SUMMARY`, `ARCHITECTURE`)
+- Rapport stratégique: `docs/GenHack2025_Report.md`
+- Guide déploiement: `docs/DEPLOYMENT_GUIDE.md`
+- Plan de test: `docs/TESTING_PLAN.md`
 
 ---
 
